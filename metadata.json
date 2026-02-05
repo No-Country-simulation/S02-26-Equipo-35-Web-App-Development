@@ -1,0 +1,5 @@
+{
+  "name": "Vertical AI",
+  "description": "AI-powered horizontal to vertical video converter with smart cropping and caption generation.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,217 @@
+/* Vertical AI - Premium Design System */
+
+:root {
+    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    --surface-light: #f8fafc;
+    --card-bg: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --sidebar-bg: #ffffff;
+}
+
+[data-bs-theme="dark"] {
+    --bs-body-bg: #030712;
+    /* Deepest Midnight */
+    --bs-body-color: #f1f5f9;
+
+    --card-bg: #0f172a;
+    /* Slate 900 */
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --sidebar-bg: #0a0f1d;
+
+    --bs-card-bg: var(--card-bg);
+    --bs-card-border-color: var(--border-color);
+
+    --bs-primary: #818cf8;
+    --bs-primary-rgb: 129, 140, 248;
+
+    --bs-secondary-bg: #1e293b;
+    --bs-tertiary-bg: #111827;
+
+    --bs-border-color: var(--border-color);
+    --bs-border-color-translucent: rgba(255, 255, 255, 0.05);
+
+    /* 
+       CRITICAL: Override hardcoded light classes in dark mode to ensure uniformity.
+       This fixes elements that were explicitly set to bg-white or text-dark.
+    */
+    .bg-white,
+    .card,
+    .btn-white,
+    .bg-light {
+        background-color: var(--card-bg) !important;
+        color: var(--text-main) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    .text-dark {
+        color: var(--text-main) !important;
+    }
+
+    .form-control,
+    .form-select {
+        background-color: var(--bs-secondary-bg);
+        border-color: var(--border-color);
+        color: var(--text-main);
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        background-color: var(--bs-tertiary-bg);
+        border-color: var(--bs-primary);
+        color: var(--text-main);
+        box-shadow: 0 0 0 0.25rem rgba(129, 140, 248, 0.25);
+    }
+
+    .dropdown-menu {
+        background-color: var(--card-bg);
+        border-color: var(--border-color);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01rem;
+    transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+/* Premium Semantic Utilities */
+.bg-surface {
+    background-color: var(--bs-body-bg);
+}
+
+.bg-card {
+    background-color: var(--card-bg);
+}
+
+.text-base {
+    color: var(--text-main);
+}
+
+.text-description {
+    color: var(--text-muted);
+}
+
+/* Premium Card Design */
+.card {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+    border-width: 1px;
+    background-color: var(--card-bg);
+    overflow: hidden;
+}
+
+.hover-translate-y:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+[data-bs-theme="dark"] .hover-translate-y:hover {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* Glassmorphism Refined */
+.bg-glass {
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.75) !important;
+}
+
+[data-bs-theme="dark"] .bg-glass {
+    background: rgba(15, 23, 42, 0.75) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 20px;
+}
+
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Text Gradient Effect */
+.text-gradient {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+/* Sidebar Styling Premium */
+.sidebar {
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    transition: background-color 0.4s ease;
+}
+
+.nav-link {
+    transition: all 0.2s ease;
+    border-radius: 12px;
+    margin: 2px 0;
+}
+
+.nav-link:hover {
+    background-color: rgba(99, 102, 241, 0.08);
+    transform: translateX(4px);
+}
+
+.nav-link.active {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+}
+
+/* Animations */
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Button Refinements */
+.btn-primary {
+    background: var(--primary-gradient);
+    border: none;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+}
+
+.btn-white {
+    background-color: white;
+    border: 1px solid var(--border-color);
+}
