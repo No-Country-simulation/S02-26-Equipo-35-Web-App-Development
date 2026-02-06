@@ -8,16 +8,16 @@ export const ProjectsView = ({ projects }) => {
   const [search, setSearch] = useState('');
 
   const filteredProjects = projects.filter(p => {
-    const matchesFilter = filter === 'All' || p.status === filter;
-    const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase());
+    const matchesFilter = filter === 'All' || p.status === (filter === 'Completed' ? 'ready' : filter.toLowerCase());
+    const matchesSearch = p.file_name.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Completed': return <CheckCircle2 className="w-4 h-4 text-success" />;
-      case 'Processing': return <Clock className="w-4 h-4 text-warning" />;
-      case 'Failed': return <AlertCircle className="w-4 h-4 text-danger" />;
+      case 'ready': return <CheckCircle2 className="w-4 h-4 text-success" />;
+      case 'processing': return <Clock className="w-4 h-4 text-warning" />;
+      case 'failed': return <AlertCircle className="w-4 h-4 text-danger" />;
       default: return null;
     }
   };
@@ -64,24 +64,24 @@ export const ProjectsView = ({ projects }) => {
       {filteredProjects.length > 0 ? (
         <div className="row g-4 mb-5">
           {filteredProjects.map((project) => (
-            <div key={project.id} className="col-12 col-sm-6 col-lg-4 col-xl-3">
+            <div key={project.video_id} className="col-12 col-sm-6 col-lg-4 col-xl-3">
               <div className="card h-100 border-0 shadow-sm rounded-5 overflow-hidden project-card transition-all hover-translate-y group bg-card border-base">
                 <div className="position-relative bg-light transition-opacity overflow-hidden" style={{ aspectRatio: '9/16' }}>
-                  <img src={project.thumbnailUrl} alt={project.title} className="w-100 h-100 object-fit-cover transition-all group-hover-scale-110" />
+                  <img src={project.file_url} alt={project.file_name} className="w-100 h-100 object-fit-cover transition-all group-hover-scale-110" />
                   <div className="position-absolute inset-0 d-flex align-items-center justify-content-center bg-dark bg-opacity-40 opacity-0 group-hover-opacity-100 transition-all cursor-pointer">
                     <div className="bg-glass rounded-circle p-4 animate-scale-in border-0">
                       <Play className="w-10 h-10 text-white" fill="currentColor" />
                     </div>
                   </div>
                   <div className="position-absolute top-0 end-0 m-3 z-1">
-                    <span className={`badge rounded-pill bg-dark bg-opacity-80 backdrop-blur text-white px-3 py-2 fw-bold text-uppercase border border-white border-opacity-10 ${project.status === 'Processing' ? 'text-warning' : ''}`} style={{ fontSize: '0.6rem', letterSpacing: '0.05rem' }}>
-                      {t(`dashboard.status.${project.status}`)}
+                    <span className={`badge rounded-pill bg-dark bg-opacity-80 backdrop-blur text-white px-3 py-2 fw-bold text-uppercase border border-white border-opacity-10 ${project.status === 'processing' ? 'text-warning' : ''}`} style={{ fontSize: '0.6rem', letterSpacing: '0.05rem' }}>
+                      {t(`dashboard.status.${project.status === 'ready' ? 'Completed' : (project.status === 'processing' ? 'Processing' : 'Failed')}`)}
                     </span>
                   </div>
                 </div>
                 <div className="card-body p-4 pt-3">
                   <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h6 className="fw-bold text-base text-truncate mb-0 pe-2" style={{ letterSpacing: '-0.01rem' }}>{project.title}</h6>
+                    <h6 className="fw-bold text-base text-truncate mb-0 pe-2" style={{ letterSpacing: '-0.01rem' }}>{project.file_name}</h6>
                     <button className="btn btn-link text-muted p-1 border-0 rounded-circle hover-bg-light">
                       <MoreHorizontal className="w-4 h-4" />
                     </button>
@@ -91,10 +91,10 @@ export const ProjectsView = ({ projects }) => {
                       <div className="p-1 rounded-circle bg-light me-2">
                         {getStatusIcon(project.status)}
                       </div>
-                      <span className="fw-medium" style={{ fontSize: '0.75rem' }}>{project.date}</span>
+                      <span className="fw-medium" style={{ fontSize: '0.75rem' }}>{project.created_at}</span>
                     </div>
                     <div className="small font-monospace text-muted opacity-50" style={{ fontSize: '0.65rem' }}>
-                      ID: {project.id.split('-')[0]}
+                      ID: {project.video_id.split('-')[0]}
                     </div>
                   </div>
                 </div>

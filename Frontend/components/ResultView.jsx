@@ -3,15 +3,15 @@ import { Button } from './Button';
 import { Download, Share2, Play, Pause, Settings, RotateCcw } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 
-export const ResultView = ({ captions: initialCaptions, onBack }) => {
-  const [captions, setCaptions] = useState(initialCaptions);
+export const ResultView = ({ shorts: initialShorts, onBack }) => {
+  const [shorts, setShorts] = useState(initialShorts);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [selectedCaptionId, setSelectedCaptionId] = useState(null);
+  const [selectedShortId, setSelectedShortId] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const { t } = useApp();
 
   const handleTextChange = (id, newText) => {
-    setCaptions(prev => prev.map(c => c.id === id ? { ...c, text: newText } : c));
+    setShorts(prev => prev.map(s => s.shorts_id === id ? { ...s, text: newText } : s));
   };
 
   const handleExport = () => {
@@ -55,11 +55,24 @@ export const ResultView = ({ captions: initialCaptions, onBack }) => {
 
               {/* Overlay Captions Simulation */}
               <div className="position-absolute bottom-0 start-0 end-0 mb-5 pb-5 px-4 text-center">
-                {captions.slice(0, 1).map(c => (
-                  <div key={c.id} className="d-inline-block bg-dark bg-opacity-80 backdrop-blur-md px-4 py-3 rounded-4 text-white fw-bold h5 shadow-lg border border-white border-opacity-20 animate-slide-up">
-                    {c.text}
+                {shorts.slice(0, 1).map(s => (
+                  <div key={s.shorts_id} className="d-inline-flex flex-column align-items-center mb-3">
+                    <div className="d-inline-block bg-dark bg-opacity-80 backdrop-blur-md px-4 py-3 rounded-4 text-white fw-bold h5 shadow-lg border border-white border-opacity-20 animate-slide-up">
+                      {s.text}
+                    </div>
+                    {s.status === 'ready' && (
+                      <span className="badge rounded-pill bg-success mt-2 animate-fade-in shadow-sm" style={{ fontSize: '0.6rem' }}>READY</span>
+                    )}
                   </div>
                 ))}
+              </div>
+
+              {/* Cover Selection Indicator (Mock) */}
+              <div className="position-absolute top-0 start-0 m-4">
+                <div className="badge rounded-pill bg-primary bg-opacity-90 backdrop-blur px-3 py-2 border border-white border-opacity-20 shadow-lg d-flex align-items-center">
+                  <div className="bg-white rounded-circle me-2" style={{ width: '8px', height: '8px' }}></div>
+                  <span className="fw-bold tracking-tight" style={{ fontSize: '0.65rem' }}>COVER SELECTED</span>
+                </div>
               </div>
 
               {/* Controls Overlay */}
@@ -109,27 +122,27 @@ export const ResultView = ({ captions: initialCaptions, onBack }) => {
               </Button>
             </div>
 
-            {/* Captions List */}
+            {/* Shorts List */}
             <div className="card-body p-4 p-xl-5 overflow-auto flex-grow-1 custom-scrollbar">
               <div className="d-flex flex-column gap-3">
-                {captions.map((caption) => (
+                {shorts.map((s) => (
                   <div
-                    key={caption.id}
-                    className={`p-4 rounded-5 border-2 transition-all cursor-pointer ${selectedCaptionId === caption.id
+                    key={s.shorts_id}
+                    className={`p-4 rounded-5 border-2 transition-all cursor-pointer ${selectedShortId === s.shorts_id
                       ? 'bg-primary bg-opacity-5 border-primary shadow-sm'
                       : 'bg-light bg-opacity-50 border-transparent hover-border-light shadow-none'
                       }`}
-                    onClick={() => setSelectedCaptionId(caption.id)}
+                    onClick={() => setSelectedShortId(s.shorts_id)}
                   >
                     <div className="d-flex align-items-center justify-content-between mb-3">
                       <span className="badge rounded-pill bg-surface text-primary border border-base shadow-sm font-monospace px-3 py-2" style={{ fontSize: '0.65rem' }}>
-                        {caption.start} → {caption.end}
+                        {s.start_second} → {s.end_second}
                       </span>
                     </div>
                     <textarea
                       className="form-control form-control-sm border-0 bg-transparent p-0 shadow-none text-base fw-bold"
-                      value={caption.text}
-                      onChange={(e) => handleTextChange(caption.id, e.target.value)}
+                      value={s.text}
+                      onChange={(e) => handleTextChange(s.shorts_id, e.target.value)}
                       rows={2}
                       style={{ resize: 'none', fontSize: '0.95rem', letterSpacing: '-0.01rem' }}
                     />
