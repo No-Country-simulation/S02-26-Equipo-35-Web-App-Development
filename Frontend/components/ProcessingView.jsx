@@ -24,14 +24,14 @@ export const ProcessingView = ({ file, onComplete, addLog, logs }) => {
     const stagesText = translations[language].processing.stages;
 
     const stages = [
-      { p: 10, msg: stagesText[0].replace('{filename}', file?.name || 'video'), delay: 500 },
-      { p: 25, msg: stagesText[1], delay: 2000 },
-      { p: 40, msg: stagesText[2], delay: 4000 },
-      { p: 55, msg: stagesText[3], delay: 6000 },
-      { p: 70, msg: stagesText[4], delay: 8000 },
-      { p: 85, msg: stagesText[5], delay: 10000 },
-      { p: 95, msg: stagesText[6], delay: 12000 },
-      { p: 100, msg: stagesText[7], delay: 13500 },
+      { p: 10, msg: stagesText[0].replace('{filename}', file?.name || 'video'), delay: 500, status: 'running' },
+      { p: 25, msg: stagesText[1], delay: 2000, status: 'running' },
+      { p: 40, msg: stagesText[2], delay: 4000, status: 'running' },
+      { p: 55, msg: stagesText[3], delay: 6000, status: 'running' },
+      { p: 70, msg: stagesText[4], delay: 8000, status: 'running' },
+      { p: 85, msg: stagesText[5], delay: 10000, status: 'running' },
+      { p: 95, msg: stagesText[6], delay: 12000, status: 'running' },
+      { p: 100, msg: stagesText[7], delay: 13500, status: 'completed' },
     ];
 
     let currentStage = 0;
@@ -50,7 +50,7 @@ export const ProcessingView = ({ file, onComplete, addLog, logs }) => {
       timeoutId = setTimeout(() => {
         if (!isMounted) return;
         setProgress(stage.p);
-        addLog(stage.msg, stage.p === 100 ? 'success' : 'info');
+        addLog(stage.msg, stage.status === 'completed' ? 'success' : 'info');
         currentStage++;
         runSimulation();
       }, delay);

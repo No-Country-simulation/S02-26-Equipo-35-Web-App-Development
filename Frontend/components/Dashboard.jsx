@@ -38,14 +38,19 @@ export const Dashboard = ({ onFileSelect, recentProjects }) => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Completed': return <CheckCircle2 className="w-4 h-4 text-success" />;
-      case 'Processing': return <Clock className="w-4 h-4 text-warning" />;
-      case 'Failed': return <AlertCircle className="w-4 h-4 text-danger" />;
+      case 'ready': return <CheckCircle2 className="w-4 h-4 text-success" />;
+      case 'processing': return <Clock className="w-4 h-4 text-warning" />;
+      case 'failed': return <AlertCircle className="w-4 h-4 text-danger" />;
     }
   };
 
   const getStatusText = (status) => {
-    return t(`dashboard.status.${status}`);
+    const statusMap = {
+      'ready': 'Completed',
+      'processing': 'Processing',
+      'failed': 'Failed'
+    };
+    return t(`dashboard.status.${statusMap[status] || status}`);
   };
 
   return (
@@ -141,12 +146,12 @@ export const Dashboard = ({ onFileSelect, recentProjects }) => {
         </div>
         <div className="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
           {recentProjects.map((project) => (
-            <div key={project.id} className="col">
+            <div key={project.video_id} className="col">
               <div className="card h-100 border-0 shadow-sm rounded-5 overflow-hidden project-card transition-all hover-translate-y">
                 <div className="card-body p-3">
                   <div className="d-flex align-items-center">
                     <div className="position-relative bg-secondary bg-opacity-10 rounded-4 overflow-hidden shadow-sm" style={{ width: '85px', height: '115px' }}>
-                      <img src={project.thumbnailUrl} alt={project.title} className="w-100 h-100 object-fit-cover opacity-90 transition-all" />
+                      <img src={project.file_url} alt={project.file_name} className="w-100 h-100 object-fit-cover opacity-90 transition-all" />
                       <div className="position-absolute inset-0 d-flex align-items-center justify-content-center bg-primary bg-opacity-25 opacity-0 project-play transition-all">
                         <div className="bg-white rounded-circle p-2 shadow-sm">
                           <Play className="w-4 h-4 text-primary" fill="currentColor" />
@@ -155,23 +160,23 @@ export const Dashboard = ({ onFileSelect, recentProjects }) => {
                     </div>
                     <div className="ms-3 flex-grow-1 overflow-hidden">
                       <div className="d-flex justify-content-between align-items-start mb-1">
-                        <h6 className="text-dark fw-bold mb-0 text-truncate pe-2">{project.title}</h6>
+                        <h6 className="text-dark fw-bold mb-0 text-truncate pe-2">{project.file_name}</h6>
                         <button className="btn btn-link text-muted p-0 border-0 flex-shrink-0">
                           <MoreHorizontal className="w-4 h-4" />
                         </button>
                       </div>
                       <p className="small text-muted mb-2 d-flex align-items-center">
                         <Clock className="w-3 h-3 me-1" />
-                        {project.date}
+                        {project.created_at}
                       </p>
                       <div className="d-flex align-items-center pt-2">
-                        <div className={`p-1 rounded-circle me-2 d-flex align-items-center ${project.status === 'Completed' ? 'bg-success bg-opacity-10 text-success' :
-                          project.status === 'Processing' ? 'bg-warning bg-opacity-10 text-warning' : 'bg-danger bg-opacity-10 text-danger'
+                        <div className={`p-1 rounded-circle me-2 d-flex align-items-center ${project.status === 'ready' ? 'bg-success bg-opacity-10 text-success' :
+                          project.status === 'processing' ? 'bg-warning bg-opacity-10 text-warning' : 'bg-danger bg-opacity-10 text-danger'
                           }`}>
                           {getStatusIcon(project.status)}
                         </div>
-                        <span className={`small fw-bold ${project.status === 'Completed' ? 'text-success' :
-                          project.status === 'Processing' ? 'text-warning' : 'text-danger'
+                        <span className={`small fw-bold ${project.status === 'ready' ? 'text-success' :
+                          project.status === 'processing' ? 'text-warning' : 'text-danger'
                           }`}>
                           {getStatusText(project.status)}
                         </span>

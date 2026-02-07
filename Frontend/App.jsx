@@ -10,12 +10,84 @@ import { generateSmartCaptions } from './services/geminiService';
 import { AppProvider, useApp } from './contexts/AppContext';
 
 const MOCK_PROJECTS = [
-  { id: '1', title: 'Tech Review - iPhone 15', date: '2 hours ago', status: 'Completed', thumbnailUrl: 'https://picsum.photos/seed/tech/200/300' },
-  { id: '2', title: 'Gym Vlog #42', date: 'Yesterday', status: 'Completed', thumbnailUrl: 'https://picsum.photos/seed/gym/200/300' },
-  { id: '3', title: 'Cooking Pasta', date: '3 days ago', status: 'Failed', thumbnailUrl: 'https://picsum.photos/seed/food/200/300' },
-  { id: '4', title: 'Travel Vlog: Japan', date: '1 week ago', status: 'Processing', thumbnailUrl: 'https://picsum.photos/seed/japan/200/300' },
-  { id: '5', title: 'Coding Tutorial', date: '2 weeks ago', status: 'Completed', thumbnailUrl: 'https://picsum.photos/seed/code/200/300' },
-  { id: '6', title: 'Cat Compilation', date: '1 month ago', status: 'Completed', thumbnailUrl: 'https://picsum.photos/seed/cat/200/300' },
+  {
+    video_id: '1',
+    file_name: 'Tech Review - iPhone 15',
+    created_at: '2 hours ago',
+    status: 'ready',
+    file_url: 'https://picsum.photos/seed/tech/200/300',
+    duration_seconds: 120,
+    shorts_requested: 3,
+    width: 1920,
+    height: 1080,
+    aspect_ratio: '16:9',
+    file_size: 15728640 // 15MB
+  },
+  {
+    video_id: '2',
+    file_name: 'Gym Vlog #42',
+    created_at: 'Yesterday',
+    status: 'ready',
+    file_url: 'https://picsum.photos/seed/gym/200/300',
+    duration_seconds: 300,
+    shorts_requested: 5,
+    width: 3840,
+    height: 2160,
+    aspect_ratio: '16:9',
+    file_size: 104857600 // 100MB
+  },
+  {
+    video_id: '3',
+    file_name: 'Cooking Pasta',
+    created_at: '3 days ago',
+    status: 'failed',
+    file_url: 'https://picsum.photos/seed/food/200/300',
+    duration_seconds: 45,
+    shorts_requested: 1,
+    width: 1080,
+    height: 1920,
+    aspect_ratio: '9:16',
+    file_size: 5242880 // 5MB
+  },
+  {
+    video_id: '4',
+    file_name: 'Travel Vlog: Japan',
+    created_at: '1 week ago',
+    status: 'processing',
+    file_url: 'https://picsum.photos/seed/japan/200/300',
+    duration_seconds: 600,
+    shorts_requested: 10,
+    width: 1920,
+    height: 1080,
+    aspect_ratio: '16:9',
+    file_size: 209715200 // 200MB
+  },
+  {
+    video_id: '5',
+    file_name: 'Coding Tutorial',
+    created_at: '2 weeks ago',
+    status: 'ready',
+    file_url: 'https://picsum.photos/seed/code/200/300',
+    duration_seconds: 1200,
+    shorts_requested: 2,
+    width: 2560,
+    height: 1440,
+    aspect_ratio: '16:9',
+    file_size: 419430400 // 400MB
+  },
+  {
+    video_id: '6',
+    file_name: 'Cat Compilation',
+    created_at: '1 month ago',
+    status: 'ready',
+    file_url: 'https://picsum.photos/seed/cat/200/300',
+    duration_seconds: 60,
+    shorts_requested: 4,
+    width: 1280,
+    height: 720,
+    aspect_ratio: '16:9',
+    file_size: 8388608 // 8MB
+  },
 ];
 
 function AppContent() {
@@ -141,7 +213,7 @@ function AppContent() {
                   </div>
                   <div className="ms-3 text-start flex-grow-1 overflow-hidden">
                     <div className="small fw-bold text-base text-truncate">John Doe</div>
-                    <div className="text-muted" style={{ fontSize: '0.65rem' }}>Pro Plan Member</div>
+                    <div className="text-muted" style={{ fontSize: '0.65rem' }}>john.doe@example.com</div>
                   </div>
                   <LogOut className="w-4 h-4 text-muted ms-2 opacity-50" />
                 </button>
@@ -184,7 +256,7 @@ function AppContent() {
 
             {currentScreen === 'result' && (
               <ResultView
-                captions={captions}
+                shorts={captions}
                 onBack={handleBackToDashboard}
               />
             )}
