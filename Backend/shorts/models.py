@@ -24,4 +24,16 @@ class Short(models.Model):
     )
     
     def __str__(self):
-        return self.file_name
+        return self.file_url
+
+class Cover(models.Model):
+    image_url = models.URLField()
+    frame_second = models.PositiveIntegerField()
+    is_selected = models.BooleanField()
+    short = models.ForeignKey(
+        'shorts.Short',
+        on_delete=models.CASCADE,
+        related_name='short'
+    )
+    def __str__(self):
+        return self.image_url
