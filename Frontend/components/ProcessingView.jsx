@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Terminal, Cpu, Check, Video } from 'lucide-react';
+import { Cpu } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { translations } from '../utils/translations';
+import { LogTerminal } from './processing/LogTerminal';
+import { VisualPreview } from './processing/VisualPreview';
 
 export const ProcessingView = ({ file, onComplete, addLog, logs }) => {
   const [progress, setProgress] = useState(0);
@@ -93,65 +95,14 @@ export const ProcessingView = ({ file, onComplete, addLog, logs }) => {
       </div>
 
       <div className="row g-4 mb-5">
-        {/* Visual Preview (Mock) */}
+        {/* Visual Preview */}
         <div className="col-md-6">
-          <div className="card h-100 border-0 shadow-sm rounded-5 overflow-hidden bg-surface position-relative" style={{ minHeight: '380px' }}>
-            <div className="position-absolute inset-0 opacity-25" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')", backgroundSize: 'cover', backgroundPosition: 'center', filter: 'grayscale(100%)' }}></div>
-            <div className="card-body d-flex flex-column align-items-center justify-content-center position-relative z-1">
-              {/* Smart Crop Overlay Simulation */}
-              <div className="position-relative bg-dark bg-opacity-75 border-primary border-4 shadow-lg rounded-4 overflow-hidden d-flex align-items-center justify-content-center" style={{ width: '130px', height: '230px' }}>
-                <Video className="w-8 h-8 text-primary text-opacity-75" />
-                <div className="position-absolute top-0 end-0 m-3 d-flex gap-1">
-                  <div className="badge bg-danger rounded-circle p-1 animate-pulse" style={{ width: '8px', height: '8px' }}></div>
-                </div>
-                <div className="position-absolute bottom-0 start-0 w-100 bg-primary bg-opacity-20 py-1 text-center" style={{ fontSize: '0.6rem' }}>
-                  <span className="text-white fw-bold tracking-widest">AI CROP</span>
-                </div>
-              </div>
-              <p className="mt-4 small fw-bold text-primary d-flex align-items-center mb-0 bg-card px-3 py-1 rounded-pill shadow-sm border border-base">
-                <Check className="w-4 h-4 me-2" /> {t('processing.cropActive')}
-              </p>
-            </div>
-          </div>
+          <VisualPreview t={t} />
         </div>
 
         {/* Logs Terminal */}
         <div className="col-md-6">
-          <div className="card h-100 border-0 shadow-lg rounded-5 overflow-hidden bg-dark text-light font-monospace" style={{ minHeight: '380px' }}>
-            <div className="card-header bg-secondary bg-opacity-10 border-bottom border-base d-flex align-items-center justify-content-between px-4 py-3">
-              <div className="d-flex align-items-center small text-secondary">
-                <Terminal className="w-4 h-4 me-2 text-primary" />
-                <span className="fw-bold" style={{ fontSize: '0.75rem', letterSpacing: '0.05rem' }}>{t('processing.logs').toUpperCase()}</span>
-              </div>
-              <div className="d-flex gap-1">
-                <div className="bg-danger rounded-circle shadow-sm" style={{ width: '12px', height: '12px', opacity: 0.8 }}></div>
-                <div className="bg-warning rounded-circle shadow-sm" style={{ width: '12px', height: '12px', opacity: 0.8 }}></div>
-                <div className="bg-success rounded-circle shadow-sm" style={{ width: '12px', height: '12px', opacity: 0.8 }}></div>
-              </div>
-            </div>
-            <div
-              ref={logContainerRef}
-              className="card-body p-4 overflow-auto scrollbar-dark"
-              style={{ fontSize: '0.75rem', lineHeight: '1.6', background: '#0a0a0c' }}
-            >
-              {logs.map((log) => (
-                <div key={log.id} className="d-flex mb-3 animate-fade-in border-start border-primary border-opacity-10 ps-3">
-                  <span className="text-secondary text-opacity-50 me-2" style={{ whiteSpace: 'nowrap', fontSize: '0.65rem' }}>{log.timestamp}</span>
-                  <span className={`
-                    ${log.type === 'info' ? 'text-white-50' : ''}
-                    ${log.type === 'success' ? 'text-success fw-bold' : ''}
-                    ${log.type === 'warning' ? 'text-warning' : ''}
-                    ${log.type === 'error' ? 'text-danger' : ''}
-                  `}>
-                    {log.type === 'info' && '➜ '}
-                    {log.type === 'success' && '✓ '}
-                    {log.message}
-                  </span>
-                </div>
-              ))}
-              <div className="text-primary opacity-50 animate-pulse ps-3">█</div>
-            </div>
-          </div>
+          <LogTerminal logs={logs} logContainerRef={logContainerRef} t={t} />
         </div>
       </div>
     </div>
