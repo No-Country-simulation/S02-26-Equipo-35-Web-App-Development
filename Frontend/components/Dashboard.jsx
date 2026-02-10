@@ -67,7 +67,7 @@ export const Dashboard = ({ onFileSelect, recentProjects }) => {
         </div>
         <div className="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
           {recentProjects.map((project) => (
-            <div key={project.video_id} className="col">
+            <div key={project.id} className="col">
               <ProjectCard project={project} variant="row" />
             </div>
           ))}

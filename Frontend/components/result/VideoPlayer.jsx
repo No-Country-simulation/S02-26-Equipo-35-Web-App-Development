@@ -15,7 +15,7 @@ export const VideoPlayer = ({ isPlaying, onTogglePlay, shorts, t }) => {
                 {/* Overlay Captions Simulation */}
                 <div className="position-absolute bottom-0 start-0 end-0 mb-5 pb-5 px-4 text-center">
                     {shorts.slice(0, 1).map(s => (
-                        <div key={s.shorts_id} className="d-inline-flex flex-column align-items-center mb-3">
+                        <div key={s.id} className="d-inline-flex flex-column align-items-center mb-3">
                             <div className="d-inline-block bg-dark bg-opacity-80 backdrop-blur-md px-4 py-3 rounded-4 text-white fw-bold h5 shadow-lg border border-white border-opacity-20 animate-slide-up">
                                 {s.text}
                             </div>
