@@ -16,7 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from videos.views import VideoView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('videos/', VideoView.as_view(), name='Video'),
+    
 ]
