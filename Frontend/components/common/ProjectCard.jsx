@@ -45,7 +45,7 @@ export const ProjectCard = ({ project, variant = 'grid' }) => {
                             </div>
                             <p className="small text-muted mb-2 d-flex align-items-center">
                                 <Clock className="w-3 h-3 me-1" />
-                                {project.created_at}
+                                {project.create_at}
                             </p>
                             <div className="d-flex align-items-center pt-2">
                                 <div className={`p-1 rounded-circle me-2 d-flex align-items-center ${project.status === 'ready' ? 'bg-success bg-opacity-10 text-success' :
@@ -94,10 +94,10 @@ export const ProjectCard = ({ project, variant = 'grid' }) => {
                         <div className="p-1 rounded-circle bg-light me-2">
                             {getStatusIcon(project.status)}
                         </div>
-                        <span className="fw-medium" style={{ fontSize: '0.75rem' }}>{project.created_at}</span>
+                        <span className="fw-medium" style={{ fontSize: '0.75rem' }}>{project.create_at}</span>
                     </div>
                     <div className="small font-monospace text-muted opacity-50" style={{ fontSize: '0.65rem' }}>
-                        ID: {project.video_id.split('-')[0]}
+                        ID: {project.id.split('-')[0]}
                     </div>
                 </div>
             </div>

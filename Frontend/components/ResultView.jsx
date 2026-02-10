@@ -11,7 +11,7 @@ export const ResultView = ({ shorts: initialShorts, onBack }) => {
   const { t } = useApp();
 
   const handleTextChange = (id, newText) => {
-    setShorts(prev => prev.map(s => s.shorts_id === id ? { ...s, text: newText } : s));
+    setShorts(prev => prev.map(s => s.id === id ? { ...s, text: newText } : s));
   };
 
   const handleExport = () => {

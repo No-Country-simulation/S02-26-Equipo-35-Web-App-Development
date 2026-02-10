@@ -31,12 +31,12 @@ export const ShortsEditor = ({
                 <div className="d-flex flex-column gap-3">
                     {shorts.map((s) => (
                         <div
-                            key={s.shorts_id}
-                            className={`p-4 rounded-5 border-2 transition-all cursor-pointer ${selectedShortId === s.shorts_id
+                            key={s.id}
+                            className={`p-4 rounded-5 border-2 transition-all cursor-pointer ${selectedShortId === s.id
                                 ? 'bg-primary bg-opacity-5 border-primary shadow-sm'
                                 : 'bg-light bg-opacity-50 border-transparent hover-border-light shadow-none'
                                 }`}
-                            onClick={() => onSelectShort(s.shorts_id)}
+                            onClick={() => onSelectShort(s.id)}
                         >
                             <div className="d-flex align-items-center justify-content-between mb-3">
                                 <span className="badge rounded-pill bg-surface text-primary border border-base shadow-sm font-monospace px-3 py-2" style={{ fontSize: '0.65rem' }}>
@@ -46,7 +46,7 @@ export const ShortsEditor = ({
                             <textarea
                                 className="form-control form-control-sm border-0 bg-transparent p-0 shadow-none text-base fw-bold"
                                 value={s.text}
-                                onChange={(e) => onTextChange(s.shorts_id, e.target.value)}
+                                onChange={(e) => onTextChange(s.id, e.target.value)}
                                 rows={2}
                                 style={{ resize: 'none', fontSize: '0.95rem', letterSpacing: '-0.01rem' }}
                             />

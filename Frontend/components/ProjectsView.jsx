@@ -56,7 +56,7 @@ export const ProjectsView = ({ projects }) => {
       {filteredProjects.length > 0 ? (
         <div className="row g-4 mb-5">
           {filteredProjects.map((project) => (
-            <div key={project.video_id} className="col-12 col-sm-6 col-lg-4 col-xl-3">
+            <div key={project.id} className="col-12 col-sm-6 col-lg-4 col-xl-3">
               <ProjectCard project={project} />
             </div>
           ))}
