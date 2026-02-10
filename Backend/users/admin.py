@@ -18,11 +18,11 @@ class CustomUserAdmin(UserAdmin):
         "created_at",
     )
 
-    # Ordenamos por email porque es el identificador principal
-    # (no usamos username).
-    ordering = ("email",)
+    # Ordenamos por username para mantener
+    # el comportamiento nativo de Django.
+    ordering = ("username",)
 
-    search_fields = ("email", "first_name", "last_name")
+    search_fields = ("username", "email", "first_name", "last_name")
 
     # Extendemos los fieldsets de Django en lugar de reemplazarlos
     # para no romper la estructura del sistema de permisos.
@@ -31,17 +31,6 @@ class CustomUserAdmin(UserAdmin):
             "Información adicional",
             {
                 "fields": ("profile_image", "created_at", "updated_at"),
-            },
-        ),
-    )
-
-    # Personalizamos el formulario de creación porque eliminamos
-    # username y el login se basa en email.
-    add_fieldsets = UserAdmin.add_fieldsets + (
-        (
-            None,
-            {
-                "fields": ("email", "profile_image"),
             },
         ),
     )
