@@ -5,7 +5,7 @@ import { ResultView } from './components/ResultView';
 import { ProjectsView } from './components/ProjectsView';
 import { HelpView } from './components/HelpView';
 import { ProfileView } from './components/ProfileView';
-import { generateSmartCaptions } from './services/geminiService';
+import { uploadVideo } from './services/videoService';
 import { AppProvider, useApp } from './contexts/AppContext';
 
 import { MOCK_PROJECTS } from './utils/mockData';
@@ -17,7 +17,7 @@ function AppContent() {
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [selectedFile, setSelectedFile] = useState(null);
   const [logs, setLogs] = useState([]);
-  const [captions, setCaptions] = useState([]);
+  const [shorts, setShorts] = useState([]);
   const { theme, toggleTheme, language, setLanguage, t } = useApp();
 
   const addLog = (message, type = 'info') => {
@@ -37,11 +37,19 @@ function AppContent() {
   };
 
   const handleProcessingComplete = async () => {
+    if (!selectedFile) return;
+
     try {
-      const generated = await generateSmartCaptions(selectedFile?.name || "Viral Video", language);
-      setCaptions(generated);
-    } catch (e) {
-      console.error(e);
+      addLog("Uploading video...", "info");
+      const response = await uploadVideo(selectedFile);
+
+      addLog("Video uploaded successfully", "success");
+
+      // setShorts(response.shorts); código acá cuando devuelva los shorts
+
+    } catch (error) {
+      console.error(error);
+      addLog("Error processing video", "error");
     }
     setCurrentScreen('result');
   };
@@ -88,7 +96,7 @@ function AppContent() {
 
             {currentScreen === 'result' && (
               <ResultView
-                shorts={captions}
+                shorts={shorts}
                 onBack={handleBackToDashboard}
               />
             )}
