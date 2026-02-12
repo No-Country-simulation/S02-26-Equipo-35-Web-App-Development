@@ -23,6 +23,7 @@ urlpatterns = [
     # API
     path("api/videos/", include(("videos.urls", "videos"), namespace="videos")),
     path("api/shorts/", include(("shorts.urls", "shorts"), namespace="shorts")),
+    path("api/", include(("users.urls", "users"), namespace="users")),
     path("api/auth/", include("rest_framework.urls")),
     path(
         "swagger/",

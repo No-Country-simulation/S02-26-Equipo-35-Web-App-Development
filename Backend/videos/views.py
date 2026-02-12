@@ -2,13 +2,14 @@ import logging
 import tempfile
 from rest_framework import viewsets, status
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from .models import Video
+from users.models import User
 from .serializers import VideoUploadSerializer, VideoResponseSerializer
 from .services import process_video_task
 
@@ -55,6 +56,7 @@ class VideoViewSet(viewsets.ModelViewSet):
 
         video_file = serializer.validated_data["video_file"]
         file_name = serializer.validated_data.get("file_name", video_file.name)
+        # user = request.user
         user = request.user
 
         # 1. Crear registro de video en estado 'uploaded'
