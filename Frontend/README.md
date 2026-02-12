@@ -1,4 +1,4 @@
-# Vertical AI
+# Vertical AI ⬅️ [Back](../README.md)
 
 Vertical AI es una herramienta innovadora diseñada para la **automatización de la generación de videos verticales** a partir de videos horizontales, optimizando el contenido para plataformas como TikTok, Instagram Reels y YouTube Shorts mediante el uso de Inteligencia Artificial.
 
@@ -23,18 +23,21 @@ Sigue estos pasos para ejecutar el proyecto en tu entorno local:
 ### Pasos para Descargar e Iniciar
 
 1. **Clonar el repositorio:**
+
    ```bash
    git clone <url-del-repositorio>
    cd vertical-ai
    ```
 
 2. **Instalar dependencias:**
+
    ```bash
    npm install
    ```
 
 3. **Configurar variables de entorno:**
    Crea un archivo llamado `.env.local` en la raíz del proyecto y añade tu API Key:
+
    ```env
    VITE_GEMINI_API_KEY=tu_clave_de_api_aquí
    ```
@@ -53,4 +56,7 @@ La aplicación estará disponible en `http://localhost:5173`.
 - `npm run preview`: Previsualiza la versión de producción localmente.
 
 ---
+
 Proyecto desarrollado por el **Equipo 35** para la simulación de No Country.
+
+⬅️ [Back](../README.md)
