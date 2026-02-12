@@ -26,6 +26,8 @@ class ShortViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Cada usuario solo ve shorts de sus propios videos"""
+        if getattr(self, "swagger_fake_view", False):
+            return Short.objects.none()
         return (
             Short.objects.filter(video__user=self.request.user)
             .select_related("video")

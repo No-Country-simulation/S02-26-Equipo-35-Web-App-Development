@@ -25,6 +25,8 @@ class VideoViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Solo los videos del usuario logueado, ordenados por fecha descendente"""
+        if getattr(self, "swagger_fake_view", False):
+            return Video.objects.none()  # No hacer query real
         return Video.objects.filter(user=self.request.user).order_by("-created_at")
 
     def get_serializer_class(self):
