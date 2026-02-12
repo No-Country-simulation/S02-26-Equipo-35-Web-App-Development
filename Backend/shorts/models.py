@@ -11,12 +11,13 @@ class Short(models.Model):
     ]
 
     file_url = models.URLField(max_length=500)
+    cloudinary_public_id = models.CharField(max_length=255)
     start_second = models.PositiveIntegerField()
     end_second = models.PositiveIntegerField()
     # se va trabajar con una sola medida de salida: 1080x1920
     # height = models.IntegerField()
     # width = models.IntegerField()
-    status = models.CharField(choices=STATUS_LIST, default="generating")
+    status = models.CharField(max_length=20, choices=STATUS_LIST, default="generating")
     created_at = models.DateTimeField(auto_now_add=True)
     cover_url = models.URLField(max_length=500, null=True, blank=True)
     video = models.ForeignKey(

@@ -12,9 +12,10 @@ class Video(models.Model):
     ]
 
     file_name = models.CharField(max_length=255)
-    file_url = models.URLField(max_length=200)
+    file_url = models.URLField(max_length=500)
+    cloudinary_public_id = models.CharField(max_length=255)
     duration_seconds = models.PositiveIntegerField()
-    status = models.CharField(choices=STATUS_LIST, default="uploaded")
+    status = models.CharField(max_length=20, choices=STATUS_LIST, default="uploaded")
     # Se va crear solo un numero fijo: 3
     # short_requested = models.PositiveIntegerField()
     # Para controlar cuantos shorts se van generando
@@ -43,8 +44,8 @@ class ProcessingJob(models.Model):
         ("failed", "failed"),
     ]
     job_type = models.CharField(choices=JOB_LIST, default="shorts_generation")
-    status = models.CharField(choices=STATUS_LIST, default="pending")
-    progress = models.FloatField(default=0.0)
+    status = models.CharField(max_length=20, choices=STATUS_LIST, default="pending")
+    progress = models.PositiveSmallIntegerField(default=0)
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
     # attempt_count = models.PositiveIntegerField()  ELIMINADO - Proxima Fase
