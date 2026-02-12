@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "drf_spectacular",
     'users',
     'videos',
     'shorts',
@@ -121,38 +120,4 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 AUTH_USER_MODEL = 'users.User'
-
-# DRF Configuration
-REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-}
-
-# Spectacular settings for Swagger
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'Video Shorts API',
-    'DESCRIPTION': 'API para gestión de videos y shorts',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    # Configuración de interfaz en modo oscuro
-    'SWAGGER_UI_SETTINGS': {
-        'deepLinking': True,
-        'persistAuthorization': True,
-        'displayOperationId': True,
-        'theme': 'dark',
-        'filter': True,
-        'tryItOutEnabled': True,
-    },
-    'COMPONENT_SPLIT_REQUEST': True,
-    'SORT_OPERATIONS': False,
-    # Agrupación por tags
-    'TAGS': [
-        {'name': 'Shorts', 'description': 'Operaciones relacionadas con shorts (videos cortos)'},
-        {'name': 'Videos', 'description': 'Gestión de videos originales'},
-        {'name': 'Users', 'description': 'Autenticación y gestión de usuarios'},
-        {'name': 'Covers', 'description': 'Portadas e imágenes de shorts'},
-    ],
-}
-
-# Silenciar validaciones de modelos para desarrollo
-SILENCED_SYSTEM_CHECKS = ['fields.E120']
 
