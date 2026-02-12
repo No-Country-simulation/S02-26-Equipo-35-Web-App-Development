@@ -94,6 +94,39 @@ pip install -r requirements.txt
 python manage.py runserver
 ```
 
+### 📚 Documentación API
+
+Una vez que el servidor esté corriendo, puedes acceder a la documentación interactiva de las APIs:
+
+**🎯 Interfaces de documentación:**
+- **🔗 Swagger UI**: `http://127.0.0.1:8000/api/docs/` (Interfaz interactiva para probar endpoints)
+- **🔗 ReDoc**: `http://127.0.0.1:8000/api/redoc/` (Documentación detallada y elegante)
+
+**📄 Esquemas OpenAPI:**
+- **🔗 Schema YAML**: `http://127.0.0.1:8000/api/schema/` (Formato por defecto)
+- **🔗 Schema JSON**: `http://127.0.0.1:8000/api/schema/?format=json` (swagger.json)
+- **🔗 Schema YAML**: `http://127.0.0.1:8000/api/schema/?format=yaml` (swagger.yaml)
+
+**👨‍💻 Para desarrolladores:**
+- Ver [`Backend/API_DEVELOPMENT_GUIDE.md`](Backend/API_DEVELOPMENT_GUIDE.md) para agregar nuevos endpoints documentados
+
+#### Endpoints disponibles:
+
+**🎥 Shorts (Videos Cortos):**
+- `GET /api/shorts/` - Lista todos los shorts (con filtros por status y video)
+- `GET /api/shorts/{id}/` - Obtiene un short específico
+- **Filtros**: `?status=ready&video=123`
+
+**🎬 Videos (Próximamente):**
+- `GET /api/videos/` - Lista videos originales  
+- `POST /api/videos/` - Subir nuevo video
+- `GET /api/videos/{id}/` - Obtener video específico
+
+**👥 Users (Próximamente):**
+- `POST /api/users/register/` - Registro de usuario
+- `POST /api/users/login/` - Inicio de sesión
+- `GET /api/users/profile/` - Perfil de usuario
+
 ---
 
 ## 📈 Estado del Proyecto
