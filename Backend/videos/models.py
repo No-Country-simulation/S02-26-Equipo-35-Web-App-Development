@@ -43,7 +43,9 @@ class ProcessingJob(models.Model):
         ("completed", "completed"),
         ("failed", "failed"),
     ]
-    job_type = models.CharField(choices=JOB_LIST, default="shorts_generation")
+    job_type = models.CharField(
+        max_length=50, choices=JOB_LIST, default="shorts_generation"
+    )
     status = models.CharField(max_length=20, choices=STATUS_LIST, default="pending")
     progress = models.PositiveSmallIntegerField(default=0)
     started_at = models.DateTimeField(null=True, blank=True)
