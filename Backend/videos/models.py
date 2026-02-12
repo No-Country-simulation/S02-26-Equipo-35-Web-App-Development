@@ -12,18 +12,18 @@ class Video(models.Model):
     ]
 
     file_name = models.CharField(max_length=255)
-    file_url = models.URLField(max_length=500)
-    cloudinary_public_id = models.CharField(max_length=255)
-    duration_seconds = models.PositiveIntegerField()
+    file_url = models.URLField(max_length=500, null=True, blank=True)
+    cloudinary_public_id = models.CharField(max_length=255, null=True, blank=True)
+    duration_seconds = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_LIST, default="uploaded")
     # Se va crear solo un numero fijo: 3
     # short_requested = models.PositiveIntegerField()
     # Para controlar cuantos shorts se van generando
     generated_shorts_count = models.PositiveIntegerField(default=0)
-    width = models.IntegerField()
-    height = models.IntegerField()
-    aspect_ratio = models.CharField(max_length=10)
-    file_size = models.PositiveIntegerField()
+    width = models.IntegerField(null=True, blank=True)
+    height = models.IntegerField(null=True, blank=True)
+    aspect_ratio = models.CharField(max_length=10, null=True, blank=True)
+    file_size = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     user = models.ForeignKey(
