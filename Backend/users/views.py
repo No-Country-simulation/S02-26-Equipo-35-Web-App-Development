@@ -31,7 +31,7 @@ class AuthViewSet(viewsets.GenericViewSet):
         request_body=UserRegisterSerializer,
         responses={201: UserProfileSerializer},
         operation_summary="Registrar usuario",
-        operation_description="Crea un usuario nuevo y devuelve el token de autenticación.",
+        operation_description="Crea un usuario nuevo y devuelve el token.",
     )
     @action(detail=False, methods=["post"])
     def register(self, request):
@@ -100,12 +100,20 @@ class AuthViewSet(viewsets.GenericViewSet):
     # ---------------- PROFILE ----------------
 
     @swagger_auto_schema(
+        method="get",
         operation_summary="Obtener perfil",
         responses={200: UserProfileSerializer},
     )
     @swagger_auto_schema(
+        method="put",
         request_body=UserProfileSerializer,
         operation_summary="Actualizar perfil",
+        responses={200: UserProfileSerializer},
+    )
+    @swagger_auto_schema(
+        method="patch",
+        request_body=UserProfileSerializer,
+        operation_summary="Actualizar parcialmente el perfil",
         responses={200: UserProfileSerializer},
     )
     @action(detail=False, methods=["get", "put", "patch"])
