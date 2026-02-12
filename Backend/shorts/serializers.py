@@ -1,54 +1,80 @@
 from rest_framework import serializers
-from typing import List, Dict, Any
-from .models import Short, Cover
-
-
-class CoverSerializer(serializers.ModelSerializer):
-    """
-    Serializer para Cover (portada del short)
-    """
-    
-    class Meta:
-        model = Cover
-        fields = ['id', 'image_url', 'frame_second', 'is_selected']
+from .models import Short
+from videos.models import Video
 
 
 class ShortSerializer(serializers.ModelSerializer):
     """
-    Serializer para Short (video corto vertical)
+    Serializer de solo lectura para Shorts.
+    Incluye información relevante del video.
     """
-    
-    covers = serializers.SerializerMethodField(
-        help_text="Lista de portadas disponibles para el short"
-    )
-    
+
+    video_title = serializers.CharField(source="video.file_name", read_only=True)
+    duration_seconds = serializers.SerializerMethodField()
+
     class Meta:
         model = Short
         fields = [
-            'id', 
-            'file_url', 
-            'start_second', 
-            'end_second', 
-            'height', 
-            'width', 
-            'status',
-            'created_at',
-            'video',
-            'covers'
+            "id",
+            "file_url",
+            "cover_url",
+            "start_second",
+            "end_second",
+            "duration_seconds",
+            "status",
+            "video",
+            "video_title",
+            "created_at",
         ]
-        
-    def get_covers(self, obj) -> List[Dict[str, Any]]:
-        """
-        Obtiene todas las portadas asociadas al short
-        """
-        covers = obj.short.all()
-        return CoverSerializer(covers, many=True).data
+        read_only_fields = fields
+
+    def get_duration_seconds(self, obj):
+        """Calcula la duración del short en segundos"""
+        return max(0, obj.end_second - obj.start_second)
 
 
-class ErrorResponseSerializer(serializers.Serializer):
+class ShortCreateSerializer(serializers.Serializer):
     """
-    Serializer para respuestas de error estándar
+    Serializer para creación manual de Shorts (solo admin/futuro).
+    Se valida existencia de video y consistencia de tiempo.
     """
-    detail = serializers.CharField(
-        help_text="Mensaje descriptivo del error"
-    )
+
+    video_id = serializers.IntegerField()
+    start_second = serializers.IntegerField(min_value=0)
+    end_second = serializers.IntegerField(min_value=0)
+
+    def validate(self, data):
+        start = data.get("start_second")
+        end = data.get("end_second")
+        video_id = data.get("video_id")
+
+        if end <= start:
+            raise serializers.ValidationError(
+                "end_second debe ser mayor a start_second"
+            )
+
+        # Verificar que el video exista
+        try:
+            video = Video.objects.get(id=video_id)
+        except Video.DoesNotExist:
+            raise serializers.ValidationError("Video no encontrado")
+
+        # Validar que end_second no exceda duración del video
+        if end > video.duration_seconds:
+            raise serializers.ValidationError(
+                f"end_second ({end}s) excede duración del video ({video.duration_seconds}s)"
+            )
+
+        data["video_instance"] = video  # opcional para usar en create
+        return data
+
+
+class ShortUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer para actualizar campos editables de Shorts.
+    Solo status y cover_url.
+    """
+
+    class Meta:
+        model = Short
+        fields = ["status", "cover_url"]

@@ -1,21 +1,12 @@
-from django.urls import path
-from . import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import VideoViewSet
 
-app_name = 'videos'
+router = DefaultRouter()
+router.register(r"", VideoViewSet, basename="video")  # lista de videos
 
-# TODO: Implementar endpoints de videos
-# Template para cuando agreguen endpoints:
+app_name = "videos"
 
 urlpatterns = [
-    # Ejemplos de endpoints a implementar:
-    # path('', views.VideoListView.as_view(), name='video-list'),
-    # path('<int:video_id>/', views.VideoDetailView.as_view(), name='video-detail'),
-    # path('upload/', views.VideoUploadView.as_view(), name='video-upload'),
-    # path('<int:video_id>/process/', views.ProcessVideoView.as_view(), name='video-process'),
+    path("", include(router.urls)),
 ]
-
-# Documentación para developers:
-# 1. Crear serializers en videos/serializers.py
-# 2. Implementar views con @extend_schema decorators
-# 3. Usar tag 'Videos' en la documentación
-# 4. Seguir pattern de shorts/views.py para consistency

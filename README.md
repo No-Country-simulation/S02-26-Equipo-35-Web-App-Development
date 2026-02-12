@@ -90,7 +90,13 @@ npm run dev
 ### Backend
 
 ```bash
+# Configurar variables de entorno
+cp Backend/.env.example Backend/.env
+# Edita Backend/.env con tus credenciales reales
+
+# Instalar dependencias y ejecutar
 pip install -r requirements.txt
+python manage.py migrate
 python manage.py runserver
 ```
 
@@ -99,16 +105,8 @@ python manage.py runserver
 Una vez que el servidor esté corriendo, puedes acceder a la documentación interactiva de las APIs:
 
 **🎯 Interfaces de documentación:**
-- **🔗 Swagger UI**: `http://127.0.0.1:8000/api/docs/` (Interfaz interactiva para probar endpoints)
-- **🔗 ReDoc**: `http://127.0.0.1:8000/api/redoc/` (Documentación detallada y elegante)
-
-**📄 Esquemas OpenAPI:**
-- **🔗 Schema YAML**: `http://127.0.0.1:8000/api/schema/` (Formato por defecto)
-- **🔗 Schema JSON**: `http://127.0.0.1:8000/api/schema/?format=json` (swagger.json)
-- **🔗 Schema YAML**: `http://127.0.0.1:8000/api/schema/?format=yaml` (swagger.yaml)
-
-**👨‍💻 Para desarrolladores:**
-- Ver [`Backend/API_DEVELOPMENT_GUIDE.md`](Backend/API_DEVELOPMENT_GUIDE.md) para agregar nuevos endpoints documentados
+- **🔗 Swagger UI**: `http://127.0.0.1:8000/swagger/` (Interfaz interactiva para probar endpoints)
+- **🔗 ReDoc**: `http://127.0.0.1:8000/redoc/` (Documentación detallada)
 
 #### Endpoints disponibles:
 

@@ -1,9 +1,10 @@
-from django.urls import path
-from . import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import ShortViewSet
 
-app_name = 'shorts'
+router = DefaultRouter()
+router.register(r"", ShortViewSet, basename="short")
 
 urlpatterns = [
-    path('', views.ShortListView.as_view(), name='short-list'),
-    path('<int:short_id>/', views.get_short_detail, name='short-detail'),
+    path("", include(router.urls)),
 ]
