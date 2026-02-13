@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth import get_user_model
 
 from drf_yasg.utils import swagger_auto_schema
@@ -12,6 +13,7 @@ from .serializers import (
     UserRegisterSerializer,
     UserLoginSerializer,
     UserProfileSerializer,
+    ProfileImageSerializer,
 )
 
 User = get_user_model()
@@ -23,7 +25,10 @@ class AuthViewSet(viewsets.GenericViewSet):
         "register": UserRegisterSerializer,
         "login": UserLoginSerializer,
         "profile": UserProfileSerializer,
+        "update_image": ProfileImageSerializer,
     }
+
+    parser_classes = [MultiPartParser, FormParser]
 
     # 🔥 Serializer dinámico
     def get_serializer_class(self):
@@ -60,6 +65,49 @@ class AuthViewSet(viewsets.GenericViewSet):
                 "token": token.key,
             },
             status=status.HTTP_201_CREATED,
+        )
+
+    # ---------------- IMAGE ----------------
+
+    @swagger_auto_schema(
+        method="patch",
+        request_body=ProfileImageSerializer,
+        operation_summary="Actualizar imagen de perfil",
+    )
+    @action(detail=False, methods=["patch"])
+    def update_image(self, request):
+
+        user = request.user
+
+        # 🔥 borrar imagen anterior
+        if user.profile_image:
+            user.profile_image.delete(save=False)
+
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+    @swagger_auto_schema(
+        method="delete",
+        operation_summary="Eliminar imagen de perfil",
+    )
+    @action(detail=False, methods=["delete"])
+    def delete_image(self, request):
+
+        user = request.user
+
+        if user.profile_image:
+            user.profile_image.delete(save=False)
+
+        user.profile_image = None
+        user.save()
+
+        return Response(
+            {"detail": "Imagen eliminada"},
+            status=status.HTTP_200_OK,
         )
 
     # ---------------- LOGIN ----------------

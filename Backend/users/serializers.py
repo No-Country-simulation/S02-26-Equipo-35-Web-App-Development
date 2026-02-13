@@ -27,7 +27,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             "password2",
             "first_name",
             "last_name",
-            "profile_image",
         ]
         read_only_fields = ["id"]
 
@@ -47,6 +46,22 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         validated_data.pop("password2")
         user = User.objects.create_user(**validated_data)
         return user
+
+
+class ProfileImageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ["profile_image"]
+
+    def validate_profile_image(self, value):
+
+        max_size = 3 * 1024 * 1024  # 3MB
+
+        if value.size > max_size:
+            raise serializers.ValidationError("La imagen no puede superar 3MB")
+
+        return value
 
 
 # -----------------------------
