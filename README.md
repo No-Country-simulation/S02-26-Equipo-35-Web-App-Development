@@ -81,6 +81,31 @@ Proyecto desarrollado por:
 - 🎨 Frontend → [Frontend README](Frontend/README.md)
 - ⚙️ Backend → [Backend README](Backend/README.md)
 
+### 📚 Documentación API
+
+Una vez que el servidor esté corriendo, puedes acceder a la documentación interactiva de las APIs:
+
+**🎯 Interfaces de documentación:**
+- **🔗 Swagger UI**: `http://127.0.0.1:8000/swagger/` (Interfaz interactiva para probar endpoints)
+- **🔗 ReDoc**: `http://127.0.0.1:8000/redoc/` (Documentación detallada)
+
+#### Endpoints disponibles:
+
+**🎥 Shorts (Videos Cortos):**
+- `GET /api/shorts/` - Lista todos los shorts (con filtros por status y video)
+- `GET /api/shorts/{id}/` - Obtiene un short específico
+- **Filtros**: `?status=ready&video=123`
+
+**🎬 Videos (Próximamente):**
+- `GET /api/videos/` - Lista videos originales  
+- `POST /api/videos/` - Subir nuevo video
+- `GET /api/videos/{id}/` - Obtener video específico
+
+**👥 Users (Próximamente):**
+- `POST /api/users/register/` - Registro de usuario
+- `POST /api/users/login/` - Inicio de sesión
+- `GET /api/users/profile/` - Perfil de usuario
+
 ---
 
 ## 📈 Estado del Proyecto

@@ -26,14 +26,14 @@ class CustomUserAdmin(UserAdmin):
 
     # Extendemos los fieldsets de Django en lugar de reemplazarlos
     # para no romper la estructura del sistema de permisos.
-    fieldsets = UserAdmin.fieldsets + (
+    fieldsets = list(UserAdmin.fieldsets) + [
         (
             "Información adicional",
             {
                 "fields": ("profile_image", "created_at", "updated_at"),
             },
         ),
-    )
+    ]
 
     # Evitamos que estos campos se editen manualmente,
     readonly_fields = ("created_at", "updated_at")
