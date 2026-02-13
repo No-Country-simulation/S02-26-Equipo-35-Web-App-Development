@@ -113,6 +113,7 @@ USE_TZ = True
 # STATIC / MEDIA (DJANGO 5 STYLE)
 # ===========================
 STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 STORAGES = {
     "default": {
