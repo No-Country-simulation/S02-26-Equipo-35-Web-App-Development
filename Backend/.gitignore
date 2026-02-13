@@ -1,3 +1,38 @@
-venv
-.vscode
-__pycache__
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+
+# === Enviromnt varible===
+venv/
+.venv/
+env
+.env
+*.ini
+*.cfg
+
+# === database ===
+db.sqlite3
+
+# === IDEs ===
+.vscode/
+.idea/
+
+# === logs ===
+*.log
+
+# === compiler cache ===
+*.egg-info/
+dist/
+build/
+
+# === Django ===
+staticfiles/
+media/
+
+# === Otros ===
+*.sqlite3
+.coverage
+htmlcov/
+.pytest_cache/
+.DS_Store
