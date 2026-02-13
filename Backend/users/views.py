@@ -18,8 +18,21 @@ User = get_user_model()
 
 
 class AuthViewSet(viewsets.GenericViewSet):
-    serializer_class = UserProfileSerializer
 
+    serializer_action_classes = {
+        "register": UserRegisterSerializer,
+        "login": UserLoginSerializer,
+        "profile": UserProfileSerializer,
+    }
+
+    # 🔥 Serializer dinámico
+    def get_serializer_class(self):
+        return self.serializer_action_classes.get(
+            self.action,
+            UserProfileSerializer,  # fallback seguro
+        )
+
+    # 🔥 Permisos dinámicos
     def get_permissions(self):
         if self.action in ["register", "login"]:
             return [AllowAny()]
@@ -35,7 +48,7 @@ class AuthViewSet(viewsets.GenericViewSet):
     )
     @action(detail=False, methods=["post"])
     def register(self, request):
-        serializer = UserRegisterSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         user = serializer.save()
@@ -67,7 +80,7 @@ class AuthViewSet(viewsets.GenericViewSet):
     )
     @action(detail=False, methods=["post"])
     def login(self, request):
-        serializer = UserLoginSerializer(
+        serializer = self.get_serializer(
             data=request.data,
             context={"request": request},
         )
@@ -86,6 +99,7 @@ class AuthViewSet(viewsets.GenericViewSet):
     # ---------------- LOGOUT ----------------
 
     @swagger_auto_schema(
+        request_body=None,  # 🔥 esto evita el body fantasma
         operation_summary="Logout",
         operation_description="Elimina el token del usuario autenticado.",
         responses={200: "Sesión cerrada"},
@@ -120,9 +134,9 @@ class AuthViewSet(viewsets.GenericViewSet):
     def profile(self, request):
 
         if request.method == "GET":
-            return Response(UserProfileSerializer(request.user).data)
+            return Response(self.get_serializer(request.user).data)
 
-        serializer = UserProfileSerializer(
+        serializer = self.get_serializer(
             request.user,
             data=request.data,
             partial=request.method == "PATCH",

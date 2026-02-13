@@ -34,7 +34,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("Ya existe un usuario con este email.")
-        return value
+        return value.lower()
 
     def validate(self, attrs):
         if attrs["password"] != attrs["password2"]:
@@ -69,7 +69,7 @@ class UserLoginSerializer(serializers.Serializer):
         )
 
         if not user:
-            raise serializers.ValidationError("Credenciales inválidas.")
+            raise serializers.ValidationError("Usuario o contraseña incorrectos")
 
         if not user.is_active:
             raise serializers.ValidationError("Usuario deshabilitado.")
