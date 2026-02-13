@@ -34,10 +34,10 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     # 🔥 Serializer dinámico
     def get_serializer_class(self):
-        return self.serializer_action_classes.get(
-            self.action,
-            UserProfileSerializer,  # fallback seguro
-        )
+        try:
+            return self.serializer_action_classes[self.action]
+        except KeyError:
+            raise Exception(f"No serializer defined for {self.action}")
 
     # 🔥 Permisos dinámicos
     def get_permissions(self):
