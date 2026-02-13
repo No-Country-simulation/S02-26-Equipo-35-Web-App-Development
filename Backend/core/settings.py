@@ -1,15 +1,23 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import cloudinary
 
 load_dotenv()
+
+cloudinary.config(
+    cloud_name=os.getenv("CLOUD_NAME"),
+    api_key=os.getenv("API_KEY"),
+    api_secret=os.getenv("API_SECRET"),
+)
 
 # ===========================
 # BASE
 # ===========================
 BASE_DIR = Path(__file__).resolve().parent.parent
-DEBUG = True
+
 SECRET_KEY = os.getenv("SECRET_KEY")
+DEBUG = True
 ALLOWED_HOSTS = []
 
 # ===========================
@@ -22,7 +30,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # REST + auth
+    # REST
     "rest_framework",
     "rest_framework.authtoken",
     # Cloudinary
@@ -56,7 +64,6 @@ ROOT_URLCONF = "core.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -81,8 +88,10 @@ DATABASES = {
 }
 
 # ===========================
-# PASSWORD VALIDATION
+# AUTH
 # ===========================
+AUTH_USER_MODEL = "users.User"
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
@@ -101,18 +110,25 @@ USE_I18N = True
 USE_TZ = True
 
 # ===========================
-# STATIC & MEDIA
+# STATIC / MEDIA (DJANGO 5 STYLE)
 # ===========================
 STATIC_URL = "/static/"
-AUTH_USER_MODEL = "users.User"
 
-DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
 CLOUDINARY_STORAGE = {
     "CLOUD_NAME": os.getenv("CLOUD_NAME"),
     "API_KEY": os.getenv("API_KEY"),
     "API_SECRET": os.getenv("API_SECRET"),
 }
-
+MEDIA_URL = "/verticalia/"
 # ===========================
 # CELERY
 # ===========================
@@ -132,18 +148,13 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
-    "DEFAULT_FILTER_BACKENDS": [
-        "django_filters.rest_framework.DjangoFilterBackend",
-        "rest_framework.filters.SearchFilter",
-        "rest_framework.filters.OrderingFilter",
-    ],
 }
 
 # ===========================
 # SWAGGER
 # ===========================
 SWAGGER_SETTINGS = {
-    "USE_SESSION_AUTH": False,  # No usar session auth
+    "USE_SESSION_AUTH": False,
     "SECURITY_DEFINITIONS": {
         "Token": {
             "type": "apiKey",
@@ -151,13 +162,6 @@ SWAGGER_SETTINGS = {
             "in": "header",
         }
     },
-    "DEFAULT_MODEL_RENDERING": "example",
-    "SWAGGER_UI_BUNDLE_JS": "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.5.0/swagger-ui-bundle.js",
-    "SWAGGER_UI_STANDALONE_PRESET_JS": "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.5.0/swagger-ui-standalone-preset.js",
-    "SWAGGER_UI_CSS": "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.5.0/swagger-ui.css",
-    "DEEP_LINKING": True,
-    "SHOW_EXTENSIONS": True,
-    "SHOW_COMMON_EXTENSIONS": True,
 }
 
 # ===========================
