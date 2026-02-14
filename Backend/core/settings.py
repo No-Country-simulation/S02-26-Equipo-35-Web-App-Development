@@ -18,14 +18,24 @@ cloudinary.config(
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY")
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
-CORS_ALLOW_ALL_ORIGINS = True
+DEBUG = os.getenv("DEBUG", "False") == "True"
+
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # si usas Vite
+    "http://localhost:3000",  # si usas Next/CRA
+    "https://tu-frontend-en-vercel.vercel.app",  # cuando lo subas
+]
+
 
 # ===========================
 # APPS
 # ===========================
 INSTALLED_APPS = [
+    # CORS
+    "corsheaders",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -52,6 +62,7 @@ INSTALLED_APPS = [
 # MIDDLEWARE
 # ===========================
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",  # CORS
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
