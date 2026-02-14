@@ -1,6 +1,8 @@
 import logging
+from cloudinary.uploader import destroy
+
 from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
@@ -9,68 +11,59 @@ from drf_yasg import openapi
 
 from .models import Short
 from videos.models import Video
-from .serializers import ShortSerializer, ShortCreateSerializer, ShortUpdateSerializer
+from .serializers import ShortSerializer
 
 logger = logging.getLogger(__name__)
 
 
 class ShortViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet para consultar shorts generados.
-    - Usuarios normales: solo lectura.
-    - Admin: creación y edición manual (no implementado todavía).
-    """
 
     permission_classes = [IsAuthenticated]
     serializer_class = ShortSerializer
+    http_method_names = ["get", "delete"]
 
     def get_queryset(self):
-        """Cada usuario solo ve shorts de sus propios videos"""
         if getattr(self, "swagger_fake_view", False):
             return Short.objects.none()
-        return (
-            Short.objects.filter(video__user=self.request.user)
-            .select_related("video")
-            .order_by("-created_at")
+
+        return Short.objects.filter(video__user=self.request.user).select_related(
+            "video"
         )
 
-    def get_serializer_class(self):
-        """Selecciona serializer según acción y permisos"""
-        if self.action == "create":
-            return ShortCreateSerializer
-        elif self.action in ["update", "partial_update"]:
-            return ShortUpdateSerializer
-        return ShortSerializer
+    # -----------------------------
+    # DELETE seguro
+    # -----------------------------
 
-    @swagger_auto_schema(
-        request_body=ShortCreateSerializer,
-        operation_description="Creación manual de short (solo admin, placeholder)",
-        responses={
-            501: openapi.Response(
-                description="Creación manual no implementada. Los shorts se generan automáticamente."
-            ),
-            403: "No autorizado",
-        },
-    )
-    def create(self, request, *args, **kwargs):
+    def perform_destroy(self, instance):
         """
-        POST /api/shorts/
-        Solo admin - creación manual de shorts.
+        Elimina el short en Cloudinary y luego en DB.
         """
-        if not request.user.is_staff:
-            return Response(
-                {"detail": "No autorizado"}, status=status.HTTP_403_FORBIDDEN
-            )
 
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        # Borrar video
+        if instance.cloudinary_public_id:
+            try:
+                destroy(
+                    instance.cloudinary_public_id,
+                    resource_type="video",
+                )
+            except Exception as e:
+                logger.error(f"Error eliminando video short {instance.id}: {str(e)}")
 
-        return Response(
-            {
-                "detail": "Creación manual no implementada. Los shorts se generan automáticamente."
-            },
-            status=status.HTTP_501_NOT_IMPLEMENTED,
-        )
+        # Borrar cover
+        if instance.cover_cloudinary_public_id:
+            try:
+                destroy(
+                    instance.cover_cloudinary_public_id,
+                    resource_type="image",
+                )
+            except Exception as e:
+                logger.error(f"Error eliminando cover short {instance.id}: {str(e)}")
+
+        instance.delete()
+
+    # -----------------------------
+    # Filtrar por video
+    # -----------------------------
 
     @swagger_auto_schema(
         operation_description="Lista todos los shorts de un video específico del usuario",
@@ -87,15 +80,23 @@ class ShortViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=["get"])
     def by_video(self, request):
-        """GET /api/shorts/by_video/?video_id=123"""
+
         video_id = request.query_params.get("video_id")
+
         if not video_id:
             return Response(
-                {"detail": "Se requiere video_id"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Se requiere video_id"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        video = get_object_or_404(Video, id=video_id, user=request.user)
+        video = get_object_or_404(
+            Video,
+            id=video_id,
+            user=request.user,
+        )
+
         shorts = self.get_queryset().filter(video=video)
+
         serializer = self.get_serializer(shorts, many=True)
 
         return Response(
@@ -107,16 +108,16 @@ class ShortViewSet(viewsets.ModelViewSet):
             }
         )
 
-    @swagger_auto_schema(
-        operation_description="Obtiene URL y duración del short si está listo",
-        responses={200: ShortSerializer()},
-    )
+    # -----------------------------
+    # Download
+    # -----------------------------
+
     @action(detail=True, methods=["get"])
     def download(self, request, pk=None):
-        """GET /api/shorts/{id}/download/"""
+
         short = self.get_object()
 
-        if short.status != "ready":
+        if short.status != Short.Status.READY:
             return Response(
                 {"detail": f"Short no disponible. Estado: {short.status}"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -126,25 +127,6 @@ class ShortViewSet(viewsets.ModelViewSet):
             {
                 "file_url": short.file_url,
                 "cover_url": short.cover_url,
-                "duration_seconds": short.end_second - short.start_second,
+                "duration_seconds": short.duration_seconds,
             }
-        )
-
-    @swagger_auto_schema(
-        operation_description="Regenera la portada del short (solo admin, placeholder)",
-        responses={501: "Regeneración de cover no implementada", 403: "No autorizado"},
-    )
-    @action(detail=True, methods=["post"])
-    def regenerate_cover(self, request, pk=None):
-        """POST /api/shorts/{id}/regenerate_cover/"""
-        if not request.user.is_staff:
-            return Response(
-                {"detail": "No autorizado"}, status=status.HTTP_403_FORBIDDEN
-            )
-
-        short = self.get_object()
-
-        return Response(
-            {"detail": "Regeneración de cover no implementada"},
-            status=status.HTTP_501_NOT_IMPLEMENTED,
         )
