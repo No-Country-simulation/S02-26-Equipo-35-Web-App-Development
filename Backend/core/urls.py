@@ -47,4 +47,6 @@ urlpatterns = [
         name="schema-yaml",
     ),
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
+    # 🔹 Health check para Render
+    path("health/", health, name="health"),
 ]
