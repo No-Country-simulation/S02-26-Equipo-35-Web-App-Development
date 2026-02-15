@@ -45,6 +45,19 @@ def process_video_task(video_id, temp_video_path, file_name):
             progress=10,
         )
 
+        print("==== DEBUG FILE CHECK ====")
+        print("Path:", temp_video_path)
+        print("Exists:", os.path.exists(temp_video_path))
+        print(
+            "Size:",
+            (
+                os.path.getsize(temp_video_path)
+                if os.path.exists(temp_video_path)
+                else "NO FILE"
+            ),
+        )
+        print("==========================")
+
         # 2 Metadata
         metadata = get_video_metadata(temp_video_path)
         video.width = metadata["width"]
