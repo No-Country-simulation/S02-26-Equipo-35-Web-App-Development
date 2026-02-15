@@ -1,6 +1,7 @@
 import logging
 import tempfile
-
+from django.conf import settings
+import os
 from rest_framework import viewsets, status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
@@ -157,11 +158,15 @@ class VideoViewSet(viewsets.ModelViewSet):
 
     def _save_temp_file(self, video_file):
         """
-        Guarda archivo temporal en disco y devuelve la ruta.
+        Guarda archivo temporal en carpeta compartida dentro del proyecto.
         """
+        temp_dir = os.path.join(settings.BASE_DIR, "temp")
+        os.makedirs(temp_dir, exist_ok=True)
+
         with tempfile.NamedTemporaryFile(
             suffix=f"_{video_file.name}",
             delete=False,
+            dir=temp_dir,
         ) as tmp_file:
             for chunk in video_file.chunks():
                 tmp_file.write(chunk)
