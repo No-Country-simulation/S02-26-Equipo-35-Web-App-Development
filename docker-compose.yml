@@ -1,0 +1,33 @@
+version: '3.9'
+
+services:
+  web:
+    build:
+      context: ./Backend
+    command: sh -c "python manage.py migrate && gunicorn core.wsgi:application --bind 0.0.0.0:8000"
+    volumes:
+      - ./Backend:/app
+    ports:
+      - '8000:8000'
+    depends_on:
+      - redis
+    env_file:
+      - ./Backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+
+  celery:
+    build:
+      context: ./Backend
+    command: celery -A core worker --loglevel=info
+    volumes:
+      - ./Backend:/app
+    depends_on:
+      - redis
+    env_file:
+      - ./Backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+
+  redis:
+    image: redis:7
