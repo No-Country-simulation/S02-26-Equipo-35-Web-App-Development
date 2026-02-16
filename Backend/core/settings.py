@@ -17,7 +17,7 @@ cloudinary.config(
 # ===========================
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = "django-insecure-+s!_-6b_4ta%0fzh-dhc-42a#bdw14w3tx=yh^smfm=h-0%e_4"
 
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
@@ -30,7 +30,7 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
+ALLOWED_HOSTS = ["*"]
 
 CORS_ALLOW_ALL_ORIGINS = True
 
@@ -149,9 +149,6 @@ CLOUDINARY_STORAGE = {
     "API_SECRET": os.getenv("API_SECRET"),
 }
 MEDIA_URL = "/verticalia/"
-# ===========================
-# CELERY
-# ===========================
 # ===========================
 # CELERY
 # ===========================
