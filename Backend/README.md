@@ -12,7 +12,7 @@ Bienvenido a **VerticalAI**. Esta guía te explica cómo levantar el backend en 
 
 ---
 
-# ✅ Requisitos Previos
+## ✅ Requisitos Previos
 
 Instalá esto antes de empezar:
 
@@ -22,9 +22,9 @@ Instalá esto antes de empezar:
 
 ---
 
-# ⚙️ Configuración del Proyecto
+## ⚙️ Configuración del Proyecto
 
-## 1️⃣ Clonar el repositorio
+### 1️⃣ Clonar el repositorio
 
 ```bash
 git clone <repo-url>
@@ -33,7 +33,7 @@ cd <project-folder>
 
 ---
 
-## 2️⃣ Crear y activar entorno de Python (venv)
+### 2️⃣ Crear y activar entorno de Python (venv)
 
 Esto crea un entorno aislado para el proyecto. Solo tenés que hacerlo una vez.
 
@@ -41,7 +41,7 @@ Esto crea un entorno aislado para el proyecto. Solo tenés que hacerlo una vez.
 python -m venv venv
 ```
 
-### Activarlo:
+#### Activarlo:
 
 **Linux / Mac**
 
@@ -59,7 +59,7 @@ Cuando esté activo vas a ver `(venv)` al inicio de la terminal.
 
 ---
 
-## 3️⃣ Instalar dependencias
+### 3️⃣ Instalar dependencias
 
 ```bash
 pip install -r requirements.txt
@@ -69,28 +69,25 @@ Esto instala Django, Celery y el resto de las librerías.
 
 ---
 
-# 🔐 Variables de Entorno (.env)
+### 🔐 Variables de Entorno (.env)
 
 Creá un archivo llamado **`.env`** en la raíz del proyecto Django.
 
 ```
-# Django Security
-SECRET_KEY="django-insecure-example-key-change-this"
+# Django Configuration
 DEBUG=True
 
-# Cloudinary Settings (ejemplo)
-CLOUD_NAME=your_cloud_name
-API_KEY=your_api_key
-API_SECRET=your_api_secret
-
-CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+# Cloudinary Configuration (Optional - for media storage)
+CLOUD_NAME=your_cloudinary_cloud_name
+API_KEY=your_cloudinary_api_key
+API_SECRET=your_cloudinary_api_secret
 ```
 
 ⚠️ Nunca subir este archivo a Git.
 
 ---
 
-# 🧱 Base de Datos (OBLIGATORIO)
+### 🧱 Base de Datos (OBLIGATORIO)
 
 ⚠️ \*\*Este paso es obligatorio antes de ejecutar cualquier cosa.
 
@@ -110,7 +107,7 @@ python manage.py createsuperuser
 
 ---
 
-# ⚡ Redis + Celery (MUY IMPORTANTE)
+### ⚡ Redis + Celery (MUY IMPORTANTE)
 
 VerticalAI procesa videos en segundo plano.
 
@@ -118,21 +115,21 @@ VerticalAI procesa videos en segundo plano.
 
 ---
 
-## 1️⃣ Instalar Redis
+### 1️⃣ Instalar Redis
 
-### Linux (Ubuntu)
+#### Linux (Ubuntu)
 
 ```bash
 sudo apt install redis-server
 ```
 
-### Mac
+#### Mac
 
 ```bash
 brew install redis
 ```
 
-### Windows (recomendado usar Docker)
+#### Windows (recomendado usar Docker)
 
 ```bash
 docker run -d -p 6379:6379 redis
@@ -140,7 +137,7 @@ docker run -d -p 6379:6379 redis
 
 ---
 
-## 2️⃣ Iniciar Redis
+### 2️⃣ Iniciar Redis
 
 ```bash
 redis-server
@@ -160,7 +157,7 @@ PONG
 
 ---
 
-## 3️⃣ Ejecutar Celery
+### 3️⃣ Ejecutar Celery
 
 Abrí **otra terminal** (dejá Redis corriendo) y ejecutá:
 
@@ -174,7 +171,7 @@ celery -A core worker -l info
 
 ---
 
-# ▶️ Levantar el Servidor Django
+### ▶️ Levantar el Servidor Django
 
 En otra terminal:
 
@@ -188,7 +185,37 @@ El backend estará disponible en:
 
 ---
 
-# 📘 Swagger — Probar la API
+## 🐳 Levantar Backend con Docker (la forma simple)
+
+Todo listo con un solo comando. No hace falta instalar nada más que `docker`.
+
+### Desde la raiz del proyecto
+
+1️⃣ Primera vez (construir y levantar)
+
+```bash
+docker compose up --build
+```
+
+2️⃣ Levantar después
+
+```
+docker compose up
+```
+
+3️⃣ Apagar
+
+```
+docker compose down
+```
+
+> 💡 Listo. El backend estará corriendo y listo para usar.
+
+---
+
+---
+
+## 📘 Swagger — Probar la API
 
 Entrá en:
 
@@ -203,9 +230,9 @@ Desde Swagger podés:
 
 ---
 
-# 🔑 Autenticación con Token en Swagger
+## 🔑 Autenticación con Token en Swagger
 
-## 1️⃣ Obtener token
+### 1️⃣ Obtener token
 
 Buscá el endpoint de login/token.
 
@@ -238,7 +265,7 @@ Ejemplo:
 
 ---
 
-## 2️⃣ Autorizar
+### 2️⃣ Autorizar
 
 Arriba a la derecha vas a ver el botón Authorize.
 ![Login](../assets/images/authorize.jpg)
@@ -259,7 +286,7 @@ Listo ✅ — ya podés usar endpoints protegidos.
 
 ---
 
-# ✅ Orden recomendado para levantar TODO (IMPORTANTE)
+## ✅ Orden recomendado para levantar TODO (IMPORTANTE)
 
 Seguí este orden EXACTO para evitar errores:
 
@@ -274,7 +301,7 @@ Seguí este orden EXACTO para evitar errores:
 
 ---
 
-# 🎯 Objetivo
+## 🎯 Objetivo
 
 Si todo está corriendo correctamente, el frontend podrá:
 

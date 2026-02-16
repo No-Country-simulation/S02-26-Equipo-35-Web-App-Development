@@ -3,6 +3,7 @@ from django.urls import path, include
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+from django.http import HttpResponse
 
 # Swagger schema view
 schema_view = get_schema_view(
@@ -18,6 +19,11 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+
+def health(request):
+    return HttpResponse("OK")
+
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     # API
@@ -30,5 +36,17 @@ urlpatterns = [
         schema_view.with_ui("swagger", cache_timeout=0),
         name="schema-swagger-ui",
     ),
+    path(
+        "swagger.json",
+        schema_view.without_ui(cache_timeout=0),
+        name="schema-json",
+    ),
+    path(
+        "swagger.yaml",
+        schema_view.without_ui(cache_timeout=0),
+        name="schema-yaml",
+    ),
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
+    # 🔹 Health check para Render
+    path("health/", health, name="health"),
 ]

@@ -2,24 +2,29 @@ from rest_framework import serializers
 from .models import Video
 
 
+# ==============================
+# Serializer para subir video
+# ==============================
 class VideoUploadSerializer(serializers.ModelSerializer):
     """
-    Serializer para recibir archivo de video desde el frontend.
-    Se encarga de validar tamaño y formato, y asignar file_name si no viene.
+    Serializer para recibir archivo de video.
+    Valida tamaño y formato.
     """
 
-    # Campo de subida de archivo (solo escritura)
     video_file = serializers.FileField(write_only=True)
 
-    # Campos de solo lectura (metadata generada por backend)
+    # Metadata generada por backend (solo lectura)
     file_url = serializers.URLField(read_only=True)
     cloudinary_public_id = serializers.CharField(read_only=True)
-    duration_seconds = serializers.IntegerField(read_only=True)
+    duration_seconds = serializers.FloatField(read_only=True)
     width = serializers.IntegerField(read_only=True)
     height = serializers.IntegerField(read_only=True)
     aspect_ratio = serializers.CharField(read_only=True)
     file_size = serializers.IntegerField(read_only=True)
     status = serializers.CharField(read_only=True)
+
+    MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
+    ALLOWED_EXTENSIONS = {"mp4", "mov", "avi", "mkv", "webm"}
 
     class Meta:
         model = Video
@@ -37,41 +42,51 @@ class VideoUploadSerializer(serializers.ModelSerializer):
             "status",
             "created_at",
         ]
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "file_url",
+            "cloudinary_public_id",
+            "duration_seconds",
+            "width",
+            "height",
+            "aspect_ratio",
+            "file_size",
+            "status",
+        ]
 
+    # ------------------------------
+    # Validaciones
+    # ------------------------------
     def validate_video_file(self, value):
-        """
-        Validar tamaño y extensión del archivo.
-        Tamaño máximo 500MB y extensiones permitidas: mp4, mov, avi, mkv, webm.
-        """
-        max_size = 500 * 1024 * 1024  # 500MB
-        if value.size > max_size:
+        if value.size > self.MAX_FILE_SIZE:
             raise serializers.ValidationError(
-                f"El archivo no puede exceder {max_size // (1024*1024)}MB"
+                f"El archivo no puede exceder {self.MAX_FILE_SIZE // (1024*1024)} MB"
             )
 
-        allowed_extensions = {"mp4", "mov", "avi", "mkv", "webm"}
-        ext = value.name.rsplit(".", 1)[-1].lower()
-        if ext not in allowed_extensions:
-            raise serializers.ValidationError("Formato de video no soportado")
+        extension = value.name.split(".")[-1].lower()
+        if extension not in self.ALLOWED_EXTENSIONS:
+            raise serializers.ValidationError(
+                f"Formato no soportado. Permitidos: {', '.join(self.ALLOWED_EXTENSIONS)}"
+            )
 
         return value
 
-    def validate(self, data):
-        """
-        Si no se proporciona file_name, asignar el nombre del archivo subido.
-        """
-        if not data.get("file_name") and "video_file" in data:
-            data["file_name"] = data["video_file"].name
-        return data
+    def validate(self, attrs):
+        # Si no se proporciona file_name, usar nombre del archivo subido
+        if not attrs.get("file_name") and attrs.get("video_file"):
+            attrs["file_name"] = attrs["video_file"].name
+        return attrs
 
 
+# ==============================
+# Serializer para leer video
+# ==============================
 class VideoResponseSerializer(serializers.ModelSerializer):
     """
-    Serializer para respuesta del video, incluyendo los shorts generados.
+    Serializer de lectura para videos.
+    Muestra metadata completa del video.
     """
-
-    shorts = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Video
@@ -80,24 +95,11 @@ class VideoResponseSerializer(serializers.ModelSerializer):
             "file_name",
             "file_url",
             "duration_seconds",
+            "width",
+            "height",
+            "aspect_ratio",
+            "file_size",
             "status",
-            "shorts",
             "created_at",
         ]
         read_only_fields = fields
-
-    def get_shorts(self, obj):
-        """
-        Retorna los shorts generados para este video,
-        ordenados por start_second.
-        """
-        return [
-            {
-                "id": short.id,
-                "file_url": short.file_url,
-                "cover_url": short.cover_url,
-                "start_second": short.start_second,
-                "end_second": short.end_second,
-            }
-            for short in obj.shorts.all().order_by("start_second")
-        ]

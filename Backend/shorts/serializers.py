@@ -1,16 +1,25 @@
 from rest_framework import serializers
 from .models import Short
-from videos.models import Video
 
 
+# =========================================================
+# Serializer principal de Short
+# =========================================================
 class ShortSerializer(serializers.ModelSerializer):
     """
-    Serializer de solo lectura para Shorts.
-    Incluye información relevante del video.
+    Serializer de lectura para Shorts.
+
+    Muestra información completa del short:
+    - URLs del video y cover
+    - Segmento del video original (start, end)
+    - Duración calculada
+    - Estado
+    - Información del video original (video_title)
+    - Fecha de creación
     """
 
     video_title = serializers.CharField(source="video.file_name", read_only=True)
-    duration_seconds = serializers.SerializerMethodField()
+    duration_seconds = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Short
@@ -28,53 +37,50 @@ class ShortSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
-    def get_duration_seconds(self, obj):
-        """Calcula la duración del short en segundos"""
-        return max(0, obj.end_second - obj.start_second)
 
-
-class ShortCreateSerializer(serializers.Serializer):
+# =========================================================
+# Serializer para descarga de Short
+# =========================================================
+class ShortDownloadSerializer(serializers.Serializer):
     """
-    Serializer para creación manual de Shorts (solo admin/futuro).
-    Se valida existencia de video y consistencia de tiempo.
+    Serializer para el endpoint de descarga del short.
+
+    Devuelve:
+    - URL del video
+    - URL del cover
+    - Duración en segundos
+    """
+
+    file_url = serializers.URLField()
+    cover_url = serializers.URLField(allow_null=True)
+    duration_seconds = serializers.FloatField()
+
+
+# =========================================================
+# Serializer de respuesta para listar shorts de un video
+# =========================================================
+class ShortByVideoResponseSerializer(serializers.Serializer):
+    """
+    Serializer de respuesta para listar shorts de un video específico.
+
+    Incluye:
+    - ID y título del video
+    - Cantidad de shorts
+    - Lista de shorts con información completa
     """
 
     video_id = serializers.IntegerField()
-    start_second = serializers.IntegerField(min_value=0)
-    end_second = serializers.IntegerField(min_value=0)
-
-    def validate(self, data):
-        start = data.get("start_second")
-        end = data.get("end_second")
-        video_id = data.get("video_id")
-
-        if end <= start:
-            raise serializers.ValidationError(
-                "end_second debe ser mayor a start_second"
-            )
-
-        # Verificar que el video exista
-        try:
-            video = Video.objects.get(id=video_id)
-        except Video.DoesNotExist:
-            raise serializers.ValidationError("Video no encontrado")
-
-        # Validar que end_second no exceda duración del video
-        if end > video.duration_seconds:
-            raise serializers.ValidationError(
-                f"end_second ({end}s) excede duración del video ({video.duration_seconds}s)"
-            )
-
-        data["video_instance"] = video  # opcional para usar en create
-        return data
+    video_title = serializers.CharField()
+    count = serializers.IntegerField()
+    shorts = ShortSerializer(many=True)
 
 
-class ShortUpdateSerializer(serializers.ModelSerializer):
+# =========================================================
+# Serializer de mensajes genéricos
+# =========================================================
+class MessageSerializer(serializers.Serializer):
     """
-    Serializer para actualizar campos editables de Shorts.
-    Solo status y cover_url.
+    Serializer genérico para mensajes de respuesta.
     """
 
-    class Meta:
-        model = Short
-        fields = ["status", "cover_url"]
+    detail = serializers.CharField()

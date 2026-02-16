@@ -97,6 +97,8 @@ class UserLoginSerializer(serializers.Serializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    profile_image = serializers.ImageField(read_only=True)
+
     class Meta:
         model = User
         fields = [
@@ -108,4 +110,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "profile_image",
             "created_at",
         ]
-        read_only_fields = ["id", "username", "created_at", "email"]
+        read_only_fields = [
+            "id",
+            "username",
+            "created_at",
+            "email",
+            "profile_image",
+        ]

@@ -8,6 +8,8 @@ from django.contrib.auth import get_user_model
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from drf_yasg.utils import no_body
+
 
 from .serializers import (
     UserRegisterSerializer,
@@ -32,10 +34,10 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     # 🔥 Serializer dinámico
     def get_serializer_class(self):
-        return self.serializer_action_classes.get(
-            self.action,
-            UserProfileSerializer,  # fallback seguro
-        )
+        try:
+            return self.serializer_action_classes[self.action]
+        except KeyError:
+            raise Exception(f"No serializer defined for {self.action}")
 
     # 🔥 Permisos dinámicos
     def get_permissions(self):
@@ -147,7 +149,7 @@ class AuthViewSet(viewsets.GenericViewSet):
     # ---------------- LOGOUT ----------------
 
     @swagger_auto_schema(
-        request_body=None,  # 🔥 esto evita el body fantasma
+        request_body=no_body,
         operation_summary="Logout",
         operation_description="Elimina el token del usuario autenticado.",
         responses={200: "Sesión cerrada"},

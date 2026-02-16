@@ -1,49 +1,44 @@
 import logging
-from django.utils import timezone
-from .models import Short
-from videos.models import Video
+import cloudinary.uploader
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
 
-class ShortService:
+def delete_short(short):
     """
-    Servicio centralizado para operaciones con Shorts.
-    Solo incluye funcionalidades fundamentales:
-    - Listar shorts de un usuario
-    - Marcar short como fallido
+    Borra un Short y su cover en Cloudinary y luego la base de datos.
+    NO toca el Video original.
     """
+    try:
+        with transaction.atomic():
+            # 🔹 Borrar video del Short
+            if short.cloudinary_public_id:
+                try:
+                    cloudinary.uploader.destroy(
+                        short.cloudinary_public_id, resource_type="video"
+                    )
+                    logger.info(
+                        f"Short video Cloudinary borrado: {short.cloudinary_public_id}"
+                    )
+                except Exception as e:
+                    logger.error(f"Error borrando video short {short.id}: {str(e)}")
 
-    @classmethod
-    def get_user_shorts(cls, user, video_id=None):
-        """
-        Obtiene todos los shorts de un usuario, opcionalmente filtrando por video.
-        Optimizado con select_related para el video.
-        """
-        queryset = Short.objects.filter(video__user=user)
+            # 🔹 Borrar cover del Short
+            if short.cover_cloudinary_public_id:
+                try:
+                    cloudinary.uploader.destroy(
+                        short.cover_cloudinary_public_id, resource_type="image"
+                    )
+                    logger.info(
+                        f"Short cover Cloudinary borrado: {short.cover_cloudinary_public_id}"
+                    )
+                except Exception as e:
+                    logger.error(f"Error borrando cover short {short.id}: {str(e)}")
 
-        if video_id:
-            queryset = queryset.filter(video_id=video_id)
-
-        # select_related para acceder al video sin otra query
-        return queryset.select_related("video").order_by("-created_at")
-
-    @classmethod
-    def mark_as_failed(cls, short_id, error_message=None):
-        """
-        Marca un short como fallido y registra en logs.
-        """
-        try:
-            updated_count = Short.objects.filter(id=short_id).update(
-                status="failed",
-            )
-            if updated_count:
-                logger.error(
-                    f"Short {short_id} marcado como FAILED. {error_message or ''}"
-                )
-            else:
-                logger.warning(
-                    f"Short {short_id} no encontrado para marcar como FAILED"
-                )
-        except Exception as e:
-            logger.exception(f"Error marcando short {short_id} como FAILED: {str(e)}")
+            # 🔹 Borrar registro en la DB
+            short.delete()
+            logger.info(f"Short {short.id} eliminado de la base de datos")
+    except Exception as e:
+        logger.error(f"Error eliminando short {short.id}: {str(e)}")
+        raise
