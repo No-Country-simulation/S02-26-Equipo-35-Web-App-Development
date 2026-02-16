@@ -8,6 +8,7 @@ from django.utils import timezone
 from celery import shared_task
 import cloudinary.uploader
 import cloudinary.api
+from django.db import transaction
 
 from .models import Video, ProcessingJob
 from shorts.models import Short
@@ -100,19 +101,36 @@ def process_video_task(video_id, temp_video_path, file_name):
 
             cover_upload = cloudinary.uploader.upload(
                 short_info["cover_path"],
+                resource_type="image",
                 folder="videos/covers",
                 public_id=f"{video.cloudinary_public_id}_cover_{i}",
             )
 
-            Short.objects.create(
-                video=video,
-                file_url=short_upload["secure_url"],
-                cloudinary_public_id=short_upload["public_id"],
-                cover_url=cover_upload["secure_url"],
-                start_second=short_info["start"],
-                end_second=short_info["end"],
-                status="ready",
-            )
+            # Obtener datos seguros de Cloudinary
+        short_public_id = short_upload.get("public_id")
+        short_url = short_upload.get("secure_url")
+        cover_public_id = cover_upload.get("public_id")
+        cover_url = cover_upload.get("secure_url")
+
+        # Crear Short en la DB
+        Short.objects.create(
+            video=video,
+            file_url=short_url if short_url else "",
+            cloudinary_public_id=short_public_id if short_public_id else None,
+            cover_url=cover_url if cover_url else "",
+            cover_cloudinary_public_id=cover_public_id if cover_public_id else None,
+            start_second=short_info["start"],
+            end_second=short_info["end"],
+            status="ready",
+        )
+
+        # =========================
+        # Limpiar archivos temporales de short y cover
+        # =========================
+        if os.path.exists(short_info["short_path"]):
+            os.unlink(short_info["short_path"])
+        if os.path.exists(short_info["cover_path"]):
+            os.unlink(short_info["cover_path"])
 
         # 6️⃣ Finalizar
         video.status = "ready"
@@ -172,7 +190,7 @@ def get_video_metadata(video_path):
         "width": width,
         "height": height,
         "aspect_ratio": f"{width // divisor}:{height // divisor}",
-        "duration": int(float(data["format"].get("duration", 0))),
+        "duration": float(data["format"].get("duration", 0)),
     }
 
 
@@ -191,9 +209,9 @@ def generate_shorts(video_path, video):
     total = video.duration_seconds
 
     segments = [
-        (0, int(total * 0.3)),
-        (int(total * 0.35), int(total * 0.65)),
-        (int(total * 0.7), total - 1),
+        (0, total * 0.3),
+        (total * 0.35, total * 0.65),
+        (total * 0.7, total - 1),
     ]
 
     for start, end in segments:
@@ -269,3 +287,63 @@ def generate_shorts(video_path, video):
                 raise
 
     return shorts_data
+
+
+# =========================================================
+# DELETE
+# =========================================================
+def delete_video(video):
+    """
+    Borra un Video y todos sus Shorts asociados, tanto de la base de datos
+    como de Cloudinary.
+    """
+
+    try:
+        with transaction.atomic():
+            # 1️⃣ Borrar shorts + covers
+            shorts = video.shorts.all()
+            for short in shorts:
+                try:
+                    # Borrar video del short
+                    if short.cloudinary_public_id:
+                        cloudinary.uploader.destroy(
+                            short.cloudinary_public_id, resource_type="video"
+                        )
+                        logger.info(
+                            f"Short video Cloudinary borrado: {short.cloudinary_public_id}"
+                        )
+
+                    # Borrar cover del short
+                    if short.cover_cloudinary_public_id:
+                        cloudinary.uploader.destroy(
+                            short.cover_cloudinary_public_id, resource_type="image"
+                        )
+                        logger.info(
+                            f"Short cover Cloudinary borrado: {short.cover_cloudinary_public_id}"
+                        )
+
+                except Exception as e:
+                    logger.error(
+                        f"Error borrando short o cover {short.id} en Cloudinary: {str(e)}"
+                    )
+                finally:
+                    short.delete()
+
+            # 2️⃣ Borrar video original
+            try:
+                if video.cloudinary_public_id:
+                    cloudinary.uploader.destroy(
+                        video.cloudinary_public_id, resource_type="video"
+                    )
+                    logger.info(
+                        f"Video Cloudinary borrado: {video.cloudinary_public_id}"
+                    )
+            except Exception as e:
+                logger.error(f"Error borrando video {video.id} en Cloudinary: {str(e)}")
+
+            # 3️⃣ Borrar instancia Video en DB
+            video.delete()
+
+    except Exception as e:
+        logger.error(f"Error eliminando video {video.id}: {str(e)}")
+        raise

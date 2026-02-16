@@ -1,13 +1,10 @@
 from rest_framework import serializers
-from django.conf import settings
 from .models import Video
 
 
 # ==============================
-# Upload Serializer
+# Serializer para subir video
 # ==============================
-
-
 class VideoUploadSerializer(serializers.ModelSerializer):
     """
     Serializer para recibir archivo de video.
@@ -16,10 +13,10 @@ class VideoUploadSerializer(serializers.ModelSerializer):
 
     video_file = serializers.FileField(write_only=True)
 
-    # Metadata generada por backend
+    # Metadata generada por backend (solo lectura)
     file_url = serializers.URLField(read_only=True)
     cloudinary_public_id = serializers.CharField(read_only=True)
-    duration_seconds = serializers.IntegerField(read_only=True)
+    duration_seconds = serializers.FloatField(read_only=True)
     width = serializers.IntegerField(read_only=True)
     height = serializers.IntegerField(read_only=True)
     aspect_ratio = serializers.CharField(read_only=True)
@@ -59,17 +56,15 @@ class VideoUploadSerializer(serializers.ModelSerializer):
         ]
 
     # ------------------------------
-    # Field Validation
+    # Validaciones
     # ------------------------------
-
     def validate_video_file(self, value):
         if value.size > self.MAX_FILE_SIZE:
             raise serializers.ValidationError(
-                f"El archivo no puede exceder {self.MAX_FILE_SIZE // (1024*1024)}MB"
+                f"El archivo no puede exceder {self.MAX_FILE_SIZE // (1024*1024)} MB"
             )
 
         extension = value.name.split(".")[-1].lower()
-
         if extension not in self.ALLOWED_EXTENSIONS:
             raise serializers.ValidationError(
                 f"Formato no soportado. Permitidos: {', '.join(self.ALLOWED_EXTENSIONS)}"
@@ -77,33 +72,21 @@ class VideoUploadSerializer(serializers.ModelSerializer):
 
         return value
 
-    # ------------------------------
-    # Object Validation
-    # ------------------------------
-
     def validate(self, attrs):
-        """
-        Si no se proporciona file_name,
-        usar el nombre del archivo subido.
-        """
+        # Si no se proporciona file_name, usar nombre del archivo subido
         if not attrs.get("file_name") and attrs.get("video_file"):
             attrs["file_name"] = attrs["video_file"].name
-
         return attrs
 
 
 # ==============================
-# Response Serializer
+# Serializer para leer video
 # ==============================
-
-
 class VideoResponseSerializer(serializers.ModelSerializer):
     """
-    Serializer de lectura para videos,
-    incluye shorts generados.
+    Serializer de lectura para videos.
+    Muestra metadata completa del video.
     """
-
-    shorts = serializers.SerializerMethodField()
 
     class Meta:
         model = Video
@@ -112,22 +95,11 @@ class VideoResponseSerializer(serializers.ModelSerializer):
             "file_name",
             "file_url",
             "duration_seconds",
+            "width",
+            "height",
+            "aspect_ratio",
+            "file_size",
             "status",
-            "shorts",
             "created_at",
         ]
         read_only_fields = fields
-
-    def get_shorts(self, obj):
-        shorts = obj.shorts.order_by("start_second")
-
-        return [
-            {
-                "id": short.id,
-                "file_url": short.file_url,
-                "cover_url": short.cover_url,
-                "start_second": short.start_second,
-                "end_second": short.end_second,
-            }
-            for short in shorts
-        ]

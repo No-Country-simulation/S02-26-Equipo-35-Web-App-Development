@@ -27,8 +27,8 @@ class Short(models.Model):
     # -----------------------------
     # Segmento del video original
     # -----------------------------
-    start_second = models.PositiveIntegerField()
-    end_second = models.PositiveIntegerField()
+    start_second = models.FloatField()
+    end_second = models.FloatField()
 
     status = models.CharField(
         max_length=20,
