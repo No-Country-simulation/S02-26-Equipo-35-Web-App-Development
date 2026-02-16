@@ -107,10 +107,10 @@ def process_video_task(video_id, temp_video_path, file_name):
             )
 
             # Obtener datos seguros de Cloudinary
-        short_public_id = short_upload.get("public_id")
-        short_url = short_upload.get("secure_url")
-        cover_public_id = cover_upload.get("public_id")
-        cover_url = cover_upload.get("secure_url")
+            short_public_id = short_upload.get("public_id")
+            short_url = short_upload.get("secure_url")
+            cover_public_id = cover_upload.get("public_id")
+            cover_url = cover_upload.get("secure_url")
 
         # Crear Short en la DB
         Short.objects.create(
