@@ -1,8 +1,8 @@
 export const getShortsByVideo = async (videoId, page = 1) => {
-  const token = 'c51cf9d114e7046a7d0986f1665235b3b8f49697';
+  const token = 'a930231548cd62f2de6b6d0fcc2cd10205be265d';
 
   const response = await fetch(
-    `https://s02-26-equipo-35-web-app-development.onrender.com/api/shorts/by_video/?video_id=${videoId}&page=${page}`,
+    `http://localhost:8000/api/shorts/by_video/?video_id=${videoId}&page=${page}`,
     {
       headers: {
         Authorization: `Token ${token}`,
@@ -11,10 +11,11 @@ export const getShortsByVideo = async (videoId, page = 1) => {
   );
 
   if (!response.ok) {
-    const text = await response.text();
-    console.error("Shorts fetch error:", text);
-    throw new Error(text);
+    throw new Error(await response.text());
   }
 
-  return await response.json();
+  const data = await response.json();
+
+  // 👇 DEVOLVEMOS SOLO EL ARRAY
+  return data.shorts ?? [];
 };

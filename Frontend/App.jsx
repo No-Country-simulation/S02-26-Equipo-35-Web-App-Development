@@ -49,25 +49,51 @@ function AppContent() {
       addLog("Uploading video...", "info");
 
       const video = await uploadVideo(selectedFile);
+      console.log("VIDEO RESPONSE:", video);
 
-      addLog("Video uploaded. Waiting for processing...", "info");
+      const videoId = video.id ?? video.video_id;
 
-   
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (!videoId) {
+        throw new Error("Video ID not found in response");
+      }
 
-      const shorts = await getShortsByVideo(video.id);
+      addLog("Video uploaded. Processing started...", "info");
+      addLog("Waiting for shorts to be generated...", "info");
+
+      let shorts = [];
+      let attempts = 0;
+      const maxAttempts = 20; // máximo 20 intentos
+      const delay = 3000; // 3 segundos
+
+      while (attempts < maxAttempts) {
+        shorts = await getShortsByVideo(videoId);
+
+        console.log(`Attempt ${attempts + 1}:`, shorts);
+
+        if (shorts.length > 0) {
+          break;
+        }
+
+        attempts++;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+
+      if (shorts.length === 0) {
+        addLog("Processing is taking longer than expected.", "warning");
+        return; // 👈 NO cambiamos de pantalla
+      }
+
+      addLog("Shorts generated successfully!", "success");
 
       setShorts(shorts);
 
-      addLog("Shorts loaded successfully", "success");
+      // 👇 SOLO AQUÍ cambiamos de pantalla
+      setCurrentScreen("result");
     } catch (error) {
       console.error(error);
       addLog("Error processing video", "error");
     }
-
-    setCurrentScreen("result");
   };
-
   const handleBackToDashboard = () => {
     setSelectedFile(null);
     setLogs([]);
