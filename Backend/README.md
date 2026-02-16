@@ -74,16 +74,13 @@ Esto instala Django, Celery y el resto de las librerías.
 Creá un archivo llamado **`.env`** en la raíz del proyecto Django.
 
 ```
-# Django Security
-SECRET_KEY="django-insecure-example-key-change-this"
+# Django Configuration
 DEBUG=True
 
-# Cloudinary Settings (ejemplo)
-CLOUD_NAME=your_cloud_name
-API_KEY=your_api_key
-API_SECRET=your_api_secret
-
-CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+# Cloudinary Configuration (Optional - for media storage)
+CLOUD_NAME=your_cloudinary_cloud_name
+API_KEY=your_cloudinary_api_key
+API_SECRET=your_cloudinary_api_secret
 ```
 
 ⚠️ Nunca subir este archivo a Git.
