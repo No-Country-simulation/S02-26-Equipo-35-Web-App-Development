@@ -1,63 +1,107 @@
 from django.db import models
 from django.conf import settings
 
-# Create your models here.
-class Video(models.Model):
-    STATUS_LIST = [
-        ('uploaded', 'uploaded'),
-        ('processing', 'processing'),
-        ('ready', 'ready'),
-        ('failed', 'failed'),
-    ]
 
-    file_name = models.CharField(max_length=60)
-    file_url = models.URLField(max_length=200)
-    duration_seconds = models.PositiveIntegerField()
-    status = models.CharField(choices=STATUS_LIST, default='uploaded')
-    short_requested = models.PositiveIntegerField()
-    width = models.IntegerField()
-    height = models.IntegerField()
-    aspect_ratio = models.CharField(max_length=32)
-    file_size = models.PositiveIntegerField()
-    create_at = models.DateTimeField(auto_now_add=True)
-    
+# ==========================================
+# Video Model
+# ==========================================
+
+
+class Video(models.Model):
+
+    class Status(models.TextChoices):
+        UPLOADED = "uploaded", "Uploaded"
+        PROCESSING = "processing", "Processing"
+        READY = "ready", "Ready"
+        FAILED = "failed", "Failed"
+
+    file_name = models.CharField(max_length=255)
+
+    # URL final en Cloudinary
+    file_url = models.URLField(max_length=500, null=True, blank=True)
+    cloudinary_public_id = models.CharField(max_length=255, null=True, blank=True)
+
+    duration_seconds = models.FloatField(null=True, blank=True)
+
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.UPLOADED,
+        db_index=True,  # optimiza filtros por estado
+    )
+
+    generated_shorts_count = models.PositiveIntegerField(default=0)
+
+    width = models.IntegerField(null=True, blank=True)
+    height = models.IntegerField(null=True, blank=True)
+    aspect_ratio = models.CharField(max_length=10, null=True, blank=True)
+    file_size = models.PositiveIntegerField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='videos'
+        related_name="videos",
+        db_index=True,  # mejora queries por usuario
     )
-    
-    def __str__(self):
-        return self.file_name
 
-class Processing_Job(models.Model):
-    JOB_LIST = [
-        ('shorts_generation', 'shorts_generation'),
-        ('cover_generation', 'cover_generation'),
-    ]
-    STATUS_LIST = [
-        ('pending', 'pending'),
-        ('running', 'running'),
-        ('completed', 'completed'),
-        ('failed', 'failed'),
-    ]
-    job_type = models.CharField(choices=JOB_LIST, default='shorts_generation')
-    status = models.CharField(choices=STATUS_LIST,default='pending')
-    progress = models.FloatField()
-    started_at = models.DateTimeField()
-    finished_at = models.DateTimeField()
-    attempt_count = models.PositiveIntegerField()
-    error_message = models.CharField(max_length=200)
-    create_at = models.DateTimeField()
-    
-    video = models.ForeignKey(
-        'videos.Video',
-        on_delete=models.CASCADE,
-        related_name='Video'
-    )
-    
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+        ]
+
     def __str__(self):
-        return self.job_type
-    
-    
+        return f"{self.file_name} ({self.status})"
+
+
+# ==========================================
+# Processing Job Model
+# ==========================================
+
+
+class ProcessingJob(models.Model):
+
+    class JobType(models.TextChoices):
+        SHORTS_GENERATION = "shorts_generation", "Shorts Generation"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        RUNNING = "running", "Running"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+
+    job_type = models.CharField(
+        max_length=50,
+        choices=JobType.choices,
+        default=JobType.SHORTS_GENERATION,
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+
+    progress = models.PositiveSmallIntegerField(default=0)
+
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    error_message = models.TextField(blank=True, default="")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    video = models.ForeignKey(
+        "videos.Video",
+        on_delete=models.CASCADE,
+        related_name="processing_jobs",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.job_type} - {self.status}"

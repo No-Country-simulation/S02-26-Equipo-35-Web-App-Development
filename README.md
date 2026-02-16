@@ -24,8 +24,8 @@ El desarrollo se realiza bajo una dinámica de **trabajo en equipo**, simulando 
 
 Proyecto desarrollado por:
 
-| Nombre   | Rol                | Foto |
-| -------- | ------------------ | ---- |
+| Nombre   | Rol                | Foto                                                                            |
+| -------- | ------------------ | ------------------------------------------------------------------------------- |
 | Nombre 1 | Frontend Developer | <img src="https://cdn-icons-png.flaticon.com/512/219/219983.png" width="100" /> |
 | Nombre 2 | Frontend Developer | <img src="https://cdn-icons-png.flaticon.com/512/219/219983.png" width="100" /> |
 | Nombre 3 | Backend Developer  | <img src="https://cdn-icons-png.flaticon.com/512/219/219983.png" width="100" /> |
@@ -34,17 +34,15 @@ Proyecto desarrollado por:
 | Nombre 6 | QA                 | <img src="https://cdn-icons-png.flaticon.com/512/219/219983.png" width="100" /> |
 | Nombre 7 | Project Manager    | <img src="https://cdn-icons-png.flaticon.com/512/219/219983.png" width="100" /> |
 
-
-
 ---
 
 ## 🖼️ Capturas del Proyecto
 
 > Espacio destinado para mostrar el funcionamiento de la aplicación.
 
-* Vista Home
-* Proceso de carga de video
-* Resultado en formato vertical
+- Vista Home
+- Proceso de carga de video
+- Resultado en formato vertical
 
 ```md
 ![Home](assets/screens/home.png)
@@ -58,41 +56,55 @@ Proyecto desarrollado por:
 
 ### Frontend
 
-* JavaScript
-* React
-* Bootstrap
-* HTML5
-* CSS3
+- JavaScript
+- React
+- Bootstrap
+- HTML5
+- CSS3
 
 ### Backend
 
-* Python
-* Django
-* Django REST Framework
+- Python
+- Django
+- Django REST Framework
 
 ### Otros
 
-* FFmpeg
-* Git & GitHub
-* Metodologías Ágiles (Scrum)
+- FFmpeg
+- Git & GitHub
+- Metodologías Ágiles (Scrum)
 
 ---
 
-## 🚀 Instalación y Uso
+## 📦 Documentación
 
-### Frontend
+- 🎨 Frontend → [Frontend README](Frontend/README.md)
+- ⚙️ Backend → [Backend README](Backend/README.md)
 
-```bash
-npm install
-npm run dev
-```
+### 📚 Documentación API
 
-### Backend
+Una vez que el servidor esté corriendo, puedes acceder a la documentación interactiva de las APIs:
 
-```bash
-pip install -r requirements.txt
-python manage.py runserver
-```
+**🎯 Interfaces de documentación:**
+- **🔗 Swagger UI**: `http://127.0.0.1:8000/swagger/` (Interfaz interactiva para probar endpoints)
+- **🔗 ReDoc**: `http://127.0.0.1:8000/redoc/` (Documentación detallada)
+
+#### Endpoints disponibles:
+
+**🎥 Shorts (Videos Cortos):**
+- `GET /api/shorts/` - Lista todos los shorts (con filtros por status y video)
+- `GET /api/shorts/{id}/` - Obtiene un short específico
+- **Filtros**: `?status=ready&video=123`
+
+**🎬 Videos (Próximamente):**
+- `GET /api/videos/` - Lista videos originales  
+- `POST /api/videos/` - Subir nuevo video
+- `GET /api/videos/{id}/` - Obtener video específico
+
+**👥 Users (Próximamente):**
+- `POST /api/users/register/` - Registro de usuario
+- `POST /api/users/login/` - Inicio de sesión
+- `GET /api/users/profile/` - Perfil de usuario
 
 ---
 
@@ -102,9 +114,9 @@ python manage.py runserver
 
 Próximas mejoras:
 
-* Ajuste automático de encuadre
-* Detección inteligente de foco
-* Exportación directa a redes sociales
+- Ajuste automático de encuadre
+- Detección inteligente de foco
+- Exportación directa a redes sociales
 
 ---
 
@@ -120,4 +132,4 @@ Si deseas colaborar o conocer más sobre el proyecto, no dudes en contactarnos.
 
 ---
 
-✨ *Proyecto desarrollado en equipo, enfocado en resolver un problema real del mercado digital.*
+✨ _Proyecto desarrollado en equipo, enfocado en resolver un problema real del mercado digital._
