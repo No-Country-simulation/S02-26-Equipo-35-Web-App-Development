@@ -13,7 +13,7 @@ env
 
 # === database ===
 db.sqlite3
-
+*.sqlite3
 # === IDEs ===
 .vscode/
 .idea/
@@ -30,9 +30,21 @@ build/
 staticfiles/
 media/
 
-# === Otros ===
-*.sqlite3
+# === Redis ===
+dump.rdb
+*.rdb
+appendonly.aof
+redis-data/
+
+# === Celery ===
+celerybeat-schedule
+celerybeat.pid
+
+# === Testing & coverage ===
 .coverage
 htmlcov/
 .pytest_cache/
+
+# === OS ===
 .DS_Store
+

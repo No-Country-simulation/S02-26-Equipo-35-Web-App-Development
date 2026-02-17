@@ -46,19 +46,6 @@ def process_video_task(video_id, temp_video_path, file_name):
             progress=10,
         )
 
-        print("==== DEBUG FILE CHECK ====")
-        print("Path:", temp_video_path)
-        print("Exists:", os.path.exists(temp_video_path))
-        print(
-            "Size:",
-            (
-                os.path.getsize(temp_video_path)
-                if os.path.exists(temp_video_path)
-                else "NO FILE"
-            ),
-        )
-        print("==========================")
-
         # 2 Metadata
         metadata = get_video_metadata(temp_video_path)
         video.width = metadata["width"]
@@ -112,25 +99,28 @@ def process_video_task(video_id, temp_video_path, file_name):
             cover_public_id = cover_upload.get("public_id")
             cover_url = cover_upload.get("secure_url")
 
-        # Crear Short en la DB
-        Short.objects.create(
-            video=video,
-            file_url=short_url if short_url else "",
-            cloudinary_public_id=short_public_id if short_public_id else None,
-            cover_url=cover_url if cover_url else "",
-            cover_cloudinary_public_id=cover_public_id if cover_public_id else None,
-            start_second=short_info["start"],
-            end_second=short_info["end"],
-            status="ready",
-        )
+            # Crear Short en la DB
+            Short.objects.create(
+                video=video,
+                file_url=short_url if short_url else "",
+                cloudinary_public_id=short_public_id if short_public_id else None,
+                cover_url=cover_url if cover_url else "",
+                cover_cloudinary_public_id=cover_public_id if cover_public_id else None,
+                start_second=short_info["start"],
+                end_second=short_info["end"],
+                status="ready",
+            )
 
-        # =========================
-        # Limpiar archivos temporales de short y cover
-        # =========================
-        if os.path.exists(short_info["short_path"]):
-            os.unlink(short_info["short_path"])
-        if os.path.exists(short_info["cover_path"]):
-            os.unlink(short_info["cover_path"])
+            logger.warning(f"CREANDO SHORT {i} PARA VIDEO {video.id}")
+            # =========================
+            # Limpiar archivos temporales de short y cover
+            # =========================
+            if os.path.exists(short_info["short_path"]):
+                os.unlink(short_info["short_path"])
+            if os.path.exists(short_info["cover_path"]):
+                os.unlink(short_info["cover_path"])
+
+        logger.warning(f"TOTAL SHORTS EN DB: {video.shorts.count()}")
 
         # 6️⃣ Finalizar
         video.status = "ready"
@@ -215,6 +205,8 @@ def generate_shorts(video_path, video):
     ]
 
     for start, end in segments:
+        start = round(start, 3)
+        end = round(end, 3)
 
         with tempfile.NamedTemporaryFile(
             suffix=".mp4", delete=False
