@@ -1,0 +1,13 @@
+# Redis dump
+dump.rdb
+*.rdb
+
+# Python / Django
+*.pyc
+__pycache__/
+venv/
+.env
+
+# Archivos temporales
+*.log
+temp/
