@@ -9,7 +9,7 @@ export const ResultView = ({ shorts: initialShorts, onBack }) => {
   const [selectedShortId, setSelectedShortId] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const { t } = useApp();
-  console.log(shorts);
+  console.log(shorts, "aa");
 
   // 👇 SINCRONIZA cuando cambian las props
   useEffect(() => {

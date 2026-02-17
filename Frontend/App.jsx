@@ -72,8 +72,8 @@ function AppContent() {
 
       while (attempts < maxAttempts) {
         generatedShorts = await getShortsByVideo(videoId);
-
-        if (generatedShorts.length > 0) break;
+        console.log("Attempt", attempts, "shorts:", generatedShorts);
+        if (generatedShorts.length === 3) break;
 
         attempts++;
         await new Promise((resolve) => setTimeout(resolve, delay));

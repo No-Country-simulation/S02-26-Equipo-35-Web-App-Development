@@ -1,5 +1,6 @@
 export const getShortsByVideo = async (videoId, page = 1) => {
-  const token = 'a930231548cd62f2de6b6d0fcc2cd10205be265d';
+  const token = '03a510b3be1e61a13752a6563606fa002d568775';
+  console.log(videoId);
 
   const response = await fetch(
     `http://localhost:8000/api/shorts/by_video/?video_id=${videoId}&page=${page}`,
