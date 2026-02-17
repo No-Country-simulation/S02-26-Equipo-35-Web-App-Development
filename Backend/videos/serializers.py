@@ -70,6 +70,9 @@ class VideoUploadSerializer(serializers.ModelSerializer):
                 f"Formato no soportado. Permitidos: {', '.join(self.ALLOWED_EXTENSIONS)}"
             )
 
+        if not value.content_type.startswith("video/"):
+            raise serializers.ValidationError("El archivo debe ser un video válido")
+
         return value
 
     def validate(self, attrs):
@@ -103,3 +106,14 @@ class VideoResponseSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = fields
+
+
+# ==============================
+# Serializer para actualizar video
+# ==============================
+
+
+class VideoUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = ["file_name"]
