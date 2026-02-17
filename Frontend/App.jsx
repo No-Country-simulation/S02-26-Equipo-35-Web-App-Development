@@ -1,10 +1,13 @@
 import React, { useState } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
 import { Dashboard } from "./components/Dashboard";
 import { ProcessingView } from "./components/ProcessingView";
 import { ResultView } from "./components/ResultView";
 import { ProjectsView } from "./components/ProjectsView";
 import { HelpView } from "./components/HelpView";
 import { ProfileView } from "./components/ProfileView";
+
 import { uploadVideo } from "./services/videoService";
 import { getShortsByVideo } from "./services/shortService";
 import { AppProvider, useApp } from "./contexts/AppContext";
@@ -13,12 +16,16 @@ import { MOCK_PROJECTS } from "./utils/mockData";
 
 import { Sidebar } from "./components/layout/Sidebar";
 import { MobileHeader } from "./components/layout/MobileHeader";
+import { LoginView } from "./components/auth/LoginView";
+import { RegisterView } from "./components/auth/RegisterView";
 
 function AppContent() {
-  const [currentScreen, setCurrentScreen] = useState("dashboard");
+  const navigate = useNavigate();
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [logs, setLogs] = useState([]);
   const [shorts, setShorts] = useState([]);
+
   const { theme, toggleTheme, language, setLanguage, t } = useApp();
 
   const addLog = (message, type = "info") => {
@@ -38,8 +45,8 @@ function AppContent() {
 
   const handleFileSelect = (file) => {
     setSelectedFile(file);
-    setCurrentScreen("processing");
     setLogs([]);
+    navigate("/processing");
   };
 
   const handleProcessingComplete = async () => {
@@ -49,8 +56,6 @@ function AppContent() {
       addLog("Uploading video...", "info");
 
       const video = await uploadVideo(selectedFile);
-      console.log("VIDEO RESPONSE:", video);
-
       const videoId = video.id ?? video.video_id;
 
       if (!videoId) {
@@ -60,52 +65,46 @@ function AppContent() {
       addLog("Video uploaded. Processing started...", "info");
       addLog("Waiting for shorts to be generated...", "info");
 
-      let shorts = [];
+      let generatedShorts = [];
       let attempts = 0;
-      const maxAttempts = 20; // máximo 20 intentos
-      const delay = 3000; // 3 segundos
+      const maxAttempts = 20;
+      const delay = 3000;
 
       while (attempts < maxAttempts) {
-        shorts = await getShortsByVideo(videoId);
+        generatedShorts = await getShortsByVideo(videoId);
 
-        console.log(`Attempt ${attempts + 1}:`, shorts);
-
-        if (shorts.length > 0) {
-          break;
-        }
+        if (generatedShorts.length > 0) break;
 
         attempts++;
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
 
-      if (shorts.length === 0) {
+      if (generatedShorts.length === 0) {
         addLog("Processing is taking longer than expected.", "warning");
-        return; // 👈 NO cambiamos de pantalla
+        return;
       }
 
       addLog("Shorts generated successfully!", "success");
 
-      setShorts(shorts);
-
-      // 👇 SOLO AQUÍ cambiamos de pantalla
-      setCurrentScreen("result");
+      setShorts(generatedShorts);
+      navigate("/result");
     } catch (error) {
       console.error(error);
       addLog("Error processing video", "error");
     }
   };
+
   const handleBackToDashboard = () => {
     setSelectedFile(null);
     setLogs([]);
-    setCurrentScreen("dashboard");
+    setShorts([]);
+    navigate("/");
   };
 
   return (
     <div className='container-fluid min-vh-100 bg-light-subtle font-sans transition-all duration-300'>
       <div className='row h-100'>
         <Sidebar
-          currentScreen={currentScreen}
-          onNavigate={setCurrentScreen}
           language={language}
           setLanguage={setLanguage}
           theme={theme}
@@ -113,38 +112,52 @@ function AppContent() {
           t={t}
         />
 
-        {/* Main Content Area */}
         <main className='ms-md-auto col-md-9 col-lg-10 px-md-4 py-4 min-vh-100 position-relative'>
-          <MobileHeader onProfileClick={() => setCurrentScreen("profile")} />
+          <MobileHeader onProfileClick={() => navigate("/profile")} />
 
           <div className='container-xl p-2 p-md-4'>
-            {currentScreen === "dashboard" && (
-              <Dashboard
-                onFileSelect={handleFileSelect}
-                recentProjects={MOCK_PROJECTS.slice(0, 3)}
+            <Routes>
+              <Route path='/login' element={<LoginView />} />
+              <Route path='/register' element={<RegisterView />} />
+              <Route
+                path='/'
+                element={
+                  <Dashboard
+                    onFileSelect={handleFileSelect}
+                    recentProjects={MOCK_PROJECTS.slice(0, 3)}
+                  />
+                }
               />
-            )}
 
-            {currentScreen === "processing" && (
-              <ProcessingView
-                file={selectedFile}
-                onComplete={handleProcessingComplete}
-                addLog={addLog}
-                logs={logs}
+              <Route
+                path='/processing'
+                element={
+                  <ProcessingView
+                    file={selectedFile}
+                    onComplete={handleProcessingComplete}
+                    addLog={addLog}
+                    logs={logs}
+                  />
+                }
               />
-            )}
 
-            {currentScreen === "result" && (
-              <ResultView shorts={shorts} onBack={handleBackToDashboard} />
-            )}
+              <Route
+                path='/result'
+                element={
+                  <ResultView shorts={shorts} onBack={handleBackToDashboard} />
+                }
+              />
 
-            {currentScreen === "projects" && (
-              <ProjectsView projects={MOCK_PROJECTS} />
-            )}
+              <Route
+                path='/projects'
+                element={<ProjectsView projects={MOCK_PROJECTS} />}
+              />
 
-            {currentScreen === "help" && <HelpView />}
+              <Route path='/help' element={<HelpView />} />
+              <Route path='/profile' element={<ProfileView />} />
 
-            {currentScreen === "profile" && <ProfileView />}
+              <Route path='*' element={<Navigate to='/' />} />
+            </Routes>
           </div>
         </main>
       </div>
@@ -155,7 +168,9 @@ function AppContent() {
 export default function App() {
   return (
     <AppProvider>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </AppProvider>
   );
 }
