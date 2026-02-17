@@ -51,6 +51,20 @@ staticfiles/
 media/
 
 # =========================
+# Redis
+# =========================
+dump.rdb
+*.rdb
+appendonly.aof
+redis-data/
+
+# =========================
+# Celery
+# =========================
+celerybeat-schedule
+celerybeat.pid
+
+# =========================
 # IDE
 # =========================
 .vscode/
@@ -61,3 +75,9 @@ media/
 # Node (por si acaso)
 # =========================
 node_modules/
+
+# =========================
+# Git
+# =========================
+.git
+.gitignore

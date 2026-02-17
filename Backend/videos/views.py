@@ -11,7 +11,11 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from .models import Video
-from .serializers import VideoUploadSerializer, VideoResponseSerializer
+from .serializers import (
+    VideoUploadSerializer,
+    VideoResponseSerializer,
+    VideoUpdateSerializer,
+)
 from .services import process_video_task, delete_video
 
 logger = logging.getLogger(__name__)
@@ -41,6 +45,8 @@ class VideoViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "create":
             return VideoUploadSerializer
+        elif self.action in ["update", "partial_update"]:
+            return VideoUpdateSerializer
         return VideoResponseSerializer
 
     # ==============================
