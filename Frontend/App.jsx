@@ -13,21 +13,27 @@ import { getShortsByVideo } from "./services/shortService";
 import { AppProvider, useApp } from "./contexts/AppContext";
 
 import { MOCK_PROJECTS } from "./utils/mockData";
-
+import { useLocation } from "react-router-dom";
 import { Sidebar } from "./components/layout/Sidebar";
 import { MobileHeader } from "./components/layout/MobileHeader";
 import { LoginView } from "./components/auth/LoginView";
 import { RegisterView } from "./components/auth/RegisterView";
+import { PrivateRoute } from "./components/auth/PrivateRoute";
+import { useAuth } from "./contexts/AuthContext";
 
 function AppContent() {
   const navigate = useNavigate();
-
+  const { token } = useAuth();
   const [selectedFile, setSelectedFile] = useState(null);
   const [logs, setLogs] = useState([]);
   const [shorts, setShorts] = useState([]);
-
+  const location = useLocation();
   const { theme, toggleTheme, language, setLanguage, t } = useApp();
+  const isAuthPage =
+    location.pathname === "/login" || location.pathname === "/register";
 
+  const isAuthenticated = !!token;
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const addLog = (message, type = "info") => {
     const newLog = {
       id: Math.random().toString(36).substr(2, 9),
@@ -104,57 +110,122 @@ function AppContent() {
   return (
     <div className='container-fluid min-vh-100 bg-light-subtle font-sans transition-all duration-300'>
       <div className='row h-100'>
-        <Sidebar
-          language={language}
-          setLanguage={setLanguage}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          t={t}
-        />
+        {/* Sidebar mobile React-controlled */}
+        {isAuthenticated && !isAuthPage && (
+          <>
+            {/* Desktop Sidebar */}
+            <div className='d-none d-md-block col-md-3 col-lg-2 p-0'>
+              <Sidebar
+                language={language}
+                setLanguage={setLanguage}
+                theme={theme}
+                toggleTheme={toggleTheme}
+                t={t}
+              />
+            </div>
 
-        <main className='ms-md-auto col-md-9 col-lg-10 px-md-4 py-4 min-vh-100 position-relative'>
-          <MobileHeader onProfileClick={() => navigate("/profile")} />
+            {/* Mobile Sidebar */}
+            <div className={`mobile-sidebar ${isSidebarOpen ? "open" : ""}`}>
+              <Sidebar
+                language={language}
+                setLanguage={setLanguage}
+                theme={theme}
+                toggleTheme={toggleTheme}
+                t={t}
+              />
+            </div>
+
+            {/* Overlay */}
+            {isSidebarOpen && (
+              <div
+                className='sidebar-overlay'
+                onClick={() => setIsSidebarOpen(false)}
+              />
+            )}
+          </>
+        )}
+        <main
+          className={`
+   ${isAuthenticated && !isAuthPage ? "col-12 col-md-9 col-lg-10 ms-md-auto" : "col-12"}
+          px-md-4  min-vh-100 position-relative
+        `}
+        >
+          {/* Mostrar MobileHeader solo cuando está autenticado */}
+          {isAuthenticated && !isAuthPage && (
+            <MobileHeader onMenuClick={() => setIsSidebarOpen(true)} />
+          )}
 
           <div className='container-xl p-2 p-md-4'>
             <Routes>
-              <Route path='/login' element={<LoginView />} />
+              <Route
+                path='/login'
+                element={token ? <Navigate to='/' replace /> : <LoginView />}
+              />
               <Route path='/register' element={<RegisterView />} />
+
               <Route
                 path='/'
                 element={
-                  <Dashboard
-                    onFileSelect={handleFileSelect}
-                    recentProjects={MOCK_PROJECTS.slice(0, 3)}
-                  />
+                  <PrivateRoute>
+                    <Dashboard
+                      onFileSelect={handleFileSelect}
+                      recentProjects={MOCK_PROJECTS.slice(0, 3)}
+                    />
+                  </PrivateRoute>
                 }
               />
 
               <Route
                 path='/processing'
                 element={
-                  <ProcessingView
-                    file={selectedFile}
-                    onComplete={handleProcessingComplete}
-                    addLog={addLog}
-                    logs={logs}
-                  />
+                  <PrivateRoute>
+                    <ProcessingView
+                      file={selectedFile}
+                      onComplete={handleProcessingComplete}
+                      addLog={addLog}
+                      logs={logs}
+                    />
+                  </PrivateRoute>
                 }
               />
 
               <Route
                 path='/result'
                 element={
-                  <ResultView shorts={shorts} onBack={handleBackToDashboard} />
+                  <PrivateRoute>
+                    <ResultView
+                      shorts={shorts}
+                      onBack={handleBackToDashboard}
+                    />
+                  </PrivateRoute>
                 }
               />
 
               <Route
                 path='/projects'
-                element={<ProjectsView projects={MOCK_PROJECTS} />}
+                element={
+                  <PrivateRoute>
+                    <ProjectsView projects={MOCK_PROJECTS} />
+                  </PrivateRoute>
+                }
               />
 
-              <Route path='/help' element={<HelpView />} />
-              <Route path='/profile' element={<ProfileView />} />
+              <Route
+                path='/profile'
+                element={
+                  <PrivateRoute>
+                    <ProfileView />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path='/help'
+                element={
+                  <PrivateRoute>
+                    <HelpView />
+                  </PrivateRoute>
+                }
+              />
 
               <Route path='*' element={<Navigate to='/' />} />
             </Routes>

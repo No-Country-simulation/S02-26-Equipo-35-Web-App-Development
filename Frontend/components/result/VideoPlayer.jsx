@@ -1,13 +1,24 @@
 import React from "react";
-import { ShortVideo } from "./ShortVideo";
+import { ShortCard } from "../common/ShortCard";
 
 export const VideoPlayer = ({ shorts }) => {
   return (
-    <div className='d-flex gap-4 flex-wrap justify-content-center'>
+    <div className='container py-4'>
       {shorts && shorts.length > 0 ? (
-        shorts.map((short) => <ShortVideo key={short.id} short={short} />)
+        <div className='row g-3 justify-content-center'>
+          {shorts.map((short) => (
+            <div
+              key={short.id}
+              className='col-12 col-sm-6 col-md-4 col-lg-3 d-flex justify-content-center'
+            >
+              <div style={{ width: "100%", maxWidth: "260px" }}>
+                <ShortCard short={short} />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
-        <p>No shorts available</p>
+        <p className='text-center text-muted'>No shorts available</p>
       )}
     </div>
   );

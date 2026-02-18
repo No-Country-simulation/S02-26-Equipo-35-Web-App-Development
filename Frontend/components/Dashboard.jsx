@@ -57,7 +57,7 @@ export const Dashboard = ({ onFileSelect, recentProjects }) => {
 
       <div className='row g-4 mb-5'>
         {/* Upload Area */}
-        <div className='col-lg-8'>
+        <div className='col-lg-12'>
           <UploadArea
             isDragging={isDragging}
             onDragOver={handleDragOver}
@@ -69,9 +69,9 @@ export const Dashboard = ({ onFileSelect, recentProjects }) => {
         </div>
 
         {/* Video Configuration */}
-        <div className='col-lg-4'>
+        {/* <div className='col-lg-4'>
           <VideoConfig t={t} />
-        </div>
+        </div> */}
       </div>
 
       {/* Recent Projects */}
