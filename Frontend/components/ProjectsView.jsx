@@ -1,28 +1,53 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Search, Filter } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { ProjectCard } from './common/ProjectCard';
+import { getShorts } from '../services/shortService';
+import { ShortCard } from './common/ShortCard';
 
 export const ProjectsView = ({ projects }) => {
   const { t } = useApp();
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
+  const [recentShorts, setRecentShorts] = useState([]);
 
-  const filteredProjects = projects.filter(p => {
-    const matchesFilter = filter === 'All' || p.status === (filter === 'Completed' ? 'ready' : filter.toLowerCase());
-    const matchesSearch = p.file_name.toLowerCase().includes(search.toLowerCase());
+  const filteredShorts = recentShorts.filter((s) => {
+    const matchesFilter =
+      filter === 'All' ||
+      s.status === (filter === 'Completed' ? 'ready' : filter.toLowerCase());
+
+    const matchesSearch = s.video_title
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
     return matchesFilter && matchesSearch;
   });
+
+  // Traigo los datos del shortServices
+  useEffect(() => {
+    const fetchData = async () => {
+      const shorts = await getShorts();
+      console.log('Shorts:', shorts);
+      setRecentShorts(shorts);
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <div className="container-fluid p-0 animate-fade-in pb-5">
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-4 mb-5 pb-2">
         <div>
           <h1 className="h2 fw-bold text-base mb-1">{t('projects.title')}</h1>
-          <p className="text-muted small mb-0">Manage and preview your recently created videos.</p>
+          <p className="text-muted small mb-0">
+            Manage and preview your recently created videos.
+          </p>
         </div>
         <div className="d-flex align-items-center gap-2 w-100 w-md-auto">
-          <div className="position-relative flex-grow-1" style={{ maxWidth: '350px' }}>
+          <div
+            className="position-relative flex-grow-1"
+            style={{ maxWidth: '350px' }}
+          >
             <Search className="position-absolute start-0 top-50 translate-middle-y ms-3 w-4 h-4 text-muted" />
             <input
               type="text"
@@ -53,11 +78,12 @@ export const ProjectsView = ({ projects }) => {
       </ul>
 
       {/* Grid */}
-      {filteredProjects.length > 0 ? (
+      {/* Grid */}
+      {filteredShorts.length > 0 ? (
         <div className="row g-4 mb-5">
-          {filteredProjects.map((project) => (
-            <div key={project.id} className="col-12 col-sm-6 col-lg-4 col-xl-3">
-              <ProjectCard project={project} />
+          {filteredShorts.map((short) => (
+            <div key={short.id} className="col-12 col-sm-6 col-lg-4 col-xl-3">
+              <ShortCard short={short} />
             </div>
           ))}
         </div>
@@ -66,7 +92,7 @@ export const ProjectsView = ({ projects }) => {
           <div className="bg-card rounded-circle p-4 shadow-sm mb-4 border border-base">
             <Search className="w-12 h-12 text-primary opacity-25" />
           </div>
-          <p className="fw-bold h5 text-base mb-1">No videos found</p>
+          <p className="fw-bold h5 text-base mb-1">No shorts found</p>
           <p className="small">{t('projects.empty')}</p>
         </div>
       )}
