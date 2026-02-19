@@ -1,23 +1,46 @@
-import React from "react";
-import { User, Zap, Video, LogOut, Sun, Moon, Globe } from "lucide-react";
+import {useEffect, useState} from "react";
+import { User, Zap, Video, LogOut, Sun, Moon} from "lucide-react";
 import { Button } from "./Button";
 import { useApp } from "../contexts/AppContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { getProfile } from "../services/userService";
 
 export const ProfileView = () => {
   const { t, theme, toggleTheme, language, setLanguage } = useApp();
 
-  const { logout } = useAuth();
+  const { logout, token } = useAuth();
   const navigate = useNavigate();
+
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await getProfile(token);
+        setProfile(data);
+      } catch (error) {
+        console.error("Error fetching profile: ", error);
+      } finally {
+        setLoading(false);
+
+      }
+    };
+
+    if (token) {
+      fetchProfile();
+    }
+  }, [token]);
 
   const handleLogout = async () => {
     await logout();
     navigate("/login");
   };
-  const handleAction = (action) => {
-    alert(`${action} (Simulation)`);
-  };
+
+  if (loading) return <div className="text-center py-5">Loading...</div>;
+  if (!profile) return <div className="text-center py-5">No profile data</div>;
+
   return (
     <div className='container py-4 animate-fade-in'>
       {/* Header Card */}
@@ -34,7 +57,7 @@ export const ProfileView = () => {
                     fontSize: "2.5rem",
                   }}
                 >
-                  JD
+                  {profile.username?.charAt(0).toUpperCase()}
                 </div>
                 <div
                   className='position-absolute bottom-0 end-0 bg-success border border-4 border-card rounded-circle shadow-sm'
@@ -44,8 +67,8 @@ export const ProfileView = () => {
             </div>
 
             <div className='col text-center text-md-start mb-4 mb-md-0 ps-md-4'>
-              <h1 className='h2 fw-bold text-base mb-1'>John Doe</h1>
-              <p className='text-muted mb-3 opacity-75'>john.doe@example.com</p>
+              <h1 className='h2 fw-bold text-base mb-1'>{profile.username}</h1>
+              <p className='text-muted mb-3 opacity-75'>{profile.email}</p>
               <div className='d-flex flex-wrap justify-content-center justify-content-md-start gap-2'>
                 <span
                   className='badge rounded-pill bg-primary bg-opacity-10 text-primary px-3 py-2 text-uppercase fw-bold'
@@ -60,7 +83,9 @@ export const ProfileView = () => {
                   className='badge rounded-pill bg-surface text-muted px-3 py-2 fw-medium border border-base shadow-none'
                   style={{ fontSize: "0.65rem" }}
                 >
-                  Member since 2023
+                  Miembro desde{" "}
+                  {profile?.created_at &&
+                    new Date(profile.created_at).toLocaleDateString("es-AR")}
                 </span>
               </div>
             </div>
