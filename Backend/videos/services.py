@@ -7,7 +7,6 @@ from math import gcd
 from django.utils import timezone
 from celery import shared_task
 import cloudinary.uploader
-import cloudinary.api
 from django.db import transaction
 
 from .models import Video, ProcessingJob
@@ -18,24 +17,170 @@ logger = logging.getLogger(__name__)
 
 
 # =========================================================
+# FFMPEG WRAPPER
+# =========================================================
+def run_ffmpeg(command):
+    try:
+        subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as e:
+        logger.error("FFmpeg failed:\n%s", e.stderr)
+        raise
+
+
+# =========================================================
+# GENERATE COVER (REUTILIZABLE)
+# =========================================================
+def generate_cover_from_video(video_path, second=1):
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_cover:
+        try:
+            run_ffmpeg(
+                [
+                    "ffmpeg",
+                    "-ss",
+                    str(second),
+                    "-i",
+                    video_path,
+                    "-vframes",
+                    "1",
+                    "-q:v",
+                    "2",
+                    "-y",
+                    temp_cover.name,
+                ]
+            )
+            return temp_cover.name
+        except Exception:
+            # limpiar si falla
+            if os.path.exists(temp_cover.name):
+                os.unlink(temp_cover.name)
+            raise
+
+
+# =========================================================
+# GENERATE SHORTS
+# =========================================================
+def generate_shorts(video_path, video):
+    """
+    🔥 1 SOLO FFMPEG POR SHORT
+    🔥 720x1280
+    🔥 libx264 + preset veryfast
+    🔥 cover generado desde el short ya procesado
+    """
+    shorts_data = []
+    total = video.duration_seconds
+
+    segments = [
+        (0, total * 0.3),
+        (total * 0.35, total * 0.65),
+        (total * 0.7, total - 1),
+    ]
+
+    for start, end in segments:
+        start = round(start, 3)
+        end = round(end, 3)
+
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_short:
+            try:
+                # Generar short
+                run_ffmpeg(
+                    [
+                        "ffmpeg",
+                        "-ss",
+                        str(start),
+                        "-to",
+                        str(end),
+                        "-i",
+                        video_path,
+                        "-vf",
+                        "crop=ih*9/16:ih,scale=720:1280",
+                        "-c:v",
+                        "libx264",
+                        "-preset",
+                        "veryfast",
+                        "-crf",
+                        "23",
+                        "-c:a",
+                        "aac",
+                        "-b:a",
+                        "128k",
+                        "-y",
+                        temp_short.name,
+                    ]
+                )
+
+                # Generar cover reutilizando función
+                cover_path = generate_cover_from_video(temp_short.name, 1)
+
+                shorts_data.append(
+                    {
+                        "short_path": temp_short.name,
+                        "cover_path": cover_path,
+                        "start": start,
+                        "end": end,
+                    }
+                )
+
+            except Exception:
+                # limpiar si falla
+                if os.path.exists(temp_short.name):
+                    os.unlink(temp_short.name)
+                raise
+
+    return shorts_data
+
+
+# =========================================================
+# METADATA
+# =========================================================
+def get_video_metadata(video_path):
+    cmd = [
+        "ffprobe",
+        "-v",
+        "quiet",
+        "-print_format",
+        "json",
+        "-show_format",
+        "-show_streams",
+        video_path,
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    data = json.loads(result.stdout)
+
+    video_stream = next(s for s in data["streams"] if s["codec_type"] == "video")
+
+    width = int(video_stream["width"])
+    height = int(video_stream["height"])
+    divisor = gcd(width, height)
+
+    return {
+        "width": width,
+        "height": height,
+        "aspect_ratio": f"{width // divisor}:{height // divisor}",
+        "duration": float(data["format"].get("duration", 0)),
+    }
+
+
+# =========================================================
 # CELERY TASK
 # =========================================================
 @shared_task
 def process_video_task(video_id, temp_video_path, file_name):
-    """
-    Procesa el video completo:
-    - Extrae metadata
-    - Genera 3 shorts optimizados
-    - Genera covers
-    - Si TODO sale bien → sube todo a Cloudinary
-    - Limpia archivo temporal SIEMPRE
-    """
     video = None
     job = None
     audio_processor = None
+    cover_original_path = None
+    shorts_local_data = []
 
     try:
-        # 1 Obtener video
+        # -----------------------
+        # INIT
+        # -----------------------
         video = Video.objects.get(id=video_id)
         video.status = "processing"
         video.save()
@@ -48,7 +193,9 @@ def process_video_task(video_id, temp_video_path, file_name):
             progress=10,
         )
 
-        # 2 Metadata
+        # -----------------------
+        # METADATA
+        # -----------------------
         metadata = get_video_metadata(temp_video_path)
         video.width = metadata["width"]
         video.height = metadata["height"]
@@ -64,18 +211,31 @@ def process_video_task(video_id, temp_video_path, file_name):
         clips_data = audio_processor.process_video_audio(temp_video_path)
         logger.info(f"📊 Clips encontrados: {clips_data}")
         
-        job.progress = 50
+        job.progress = 30
         job.save()
 
-        # 3 Generar shorts LOCALMENTE (sin subir nada aún)
-        
+        # -----------------------
+        # GENERAR COVER ORIGINAL
+        # -----------------------
+        cover_original_path = generate_cover_from_video(temp_video_path, 1)
+
+        job.progress = 35
+        job.save()
+
+        # -----------------------
+        # GENERAR SHORTS LOCAL
+        # -----------------------
         shorts_local_data = generate_shorts(temp_video_path, video)
 
         job.progress = 70
         job.save()
         
 
-        # 4 Subir ORIGINAL
+        # ============================
+        # 🔥 SUBIDA A CLOUDINARY (SOLO SI TODO OK)
+        # ============================
+
+        # Subir original
         original_upload = cloudinary.uploader.upload(
             temp_video_path,
             resource_type="video",
@@ -85,9 +245,20 @@ def process_video_task(video_id, temp_video_path, file_name):
 
         video.file_url = original_upload["secure_url"]
         video.cloudinary_public_id = original_upload["public_id"]
+
+        # Subir cover original
+        cover_original_upload = cloudinary.uploader.upload(
+            cover_original_path,
+            resource_type="image",
+            folder="videos/covers/original",
+            public_id=f"{video.cloudinary_public_id}_cover_original",
+        )
+
+        video.cover_original_url = cover_original_upload["secure_url"]
+        video.cover_original_cloudinary_public_id = cover_original_upload["public_id"]
         video.save()
 
-        # 5 Subir shorts y covers
+        # Subir shorts
         for i, short_info in enumerate(shorts_local_data, 1):
 
             short_upload = cloudinary.uploader.upload(
@@ -104,36 +275,33 @@ def process_video_task(video_id, temp_video_path, file_name):
                 public_id=f"{video.cloudinary_public_id}_cover_{i}",
             )
 
-            # Obtener datos seguros de Cloudinary
-            short_public_id = short_upload.get("public_id")
-            short_url = short_upload.get("secure_url")
-            cover_public_id = cover_upload.get("public_id")
-            cover_url = cover_upload.get("secure_url")
-
-            # Crear Short en la DB
             Short.objects.create(
                 video=video,
-                file_url=short_url if short_url else "",
-                cloudinary_public_id=short_public_id if short_public_id else None,
-                cover_url=cover_url if cover_url else "",
-                cover_cloudinary_public_id=cover_public_id if cover_public_id else None,
+                file_url=short_upload["secure_url"],
+                cloudinary_public_id=short_upload["public_id"],
+                cover_url=cover_upload["secure_url"],
+                cover_cloudinary_public_id=cover_upload["public_id"],
                 start_second=short_info["start"],
                 end_second=short_info["end"],
                 status="ready",
             )
 
-            logger.warning(f"CREANDO SHORT {i} PARA VIDEO {video.id}")
-            # =========================
-            # Limpiar archivos temporales de short y cover
-            # =========================
-            if os.path.exists(short_info["short_path"]):
-                os.unlink(short_info["short_path"])
-            if os.path.exists(short_info["cover_path"]):
-                os.unlink(short_info["cover_path"])
+        # -----------------------
+        # CLEAN TEMP FILES
+        # -----------------------
+        if cover_original_path and os.path.exists(cover_original_path):
+            os.unlink(cover_original_path)
+
+        for short in shorts_local_data:
+            if os.path.exists(short["short_path"]):
+                os.unlink(short["short_path"])
+            if os.path.exists(short["cover_path"]):
+                os.unlink(short["cover_path"])
 
         logger.warning(f"TOTAL SHORTS EN DB: {video.shorts.count()}")
-
-        # 6️⃣ Finalizar
+        # -----------------------
+        # FINALIZAR
+        # -----------------------
         video.status = "ready"
         video.generated_shorts_count = 3
         video.save()
@@ -159,137 +327,8 @@ def process_video_task(video_id, temp_video_path, file_name):
             job.save()
 
     finally:
-        # 🔥 CRÍTICO — borrar archivo temporal original SIEMPRE
         if os.path.exists(temp_video_path):
             os.unlink(temp_video_path)
-
-
-# =========================================================
-# METADATA
-# =========================================================
-def get_video_metadata(video_path):
-    cmd = [
-        "ffprobe",
-        "-v",
-        "quiet",
-        "-print_format",
-        "json",
-        "-show_format",
-        "-show_streams",
-        video_path,
-    ]
-
-    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-    data = json.loads(result.stdout)
-
-    video_stream = next(s for s in data["streams"] if s["codec_type"] == "video")
-    width = int(video_stream["width"])
-    height = int(video_stream["height"])
-    divisor = gcd(width, height)
-
-    return {
-        "width": width,
-        "height": height,
-        "aspect_ratio": f"{width // divisor}:{height // divisor}",
-        "duration": float(data["format"].get("duration", 0)),
-    }
-
-
-# =========================================================
-# GENERATE SHORTS (OPTIMIZADO)
-# =========================================================
-def generate_shorts(video_path, video):
-    """
-    🔥 1 SOLO FFMPEG POR SHORT
-    🔥 720x1280
-    🔥 libx264 + preset veryfast
-    🔥 cover generado desde el short ya procesado
-    """
-
-    shorts_data = []
-    total = video.duration_seconds
-
-    segments = [
-        (0, total * 0.3),
-        (total * 0.35, total * 0.65),
-        (total * 0.7, total - 1),
-    ]
-
-    for start, end in segments:
-        start = round(start, 3)
-        end = round(end, 3)
-
-        with tempfile.NamedTemporaryFile(
-            suffix=".mp4", delete=False
-        ) as temp_short, tempfile.NamedTemporaryFile(
-            suffix=".jpg", delete=False
-        ) as temp_cover:
-
-            try:
-                # 🔥 UN SOLO COMANDO FFMPEG
-                subprocess.run(
-                    [
-                        "ffmpeg",
-                        "-ss",
-                        str(start),
-                        "-to",
-                        str(end),
-                        "-i",
-                        video_path,
-                        "-vf",
-                        "crop=ih*9/16:ih,scale=720:1280",
-                        "-c:v",
-                        "libx264",
-                        "-preset",
-                        "veryfast",
-                        "-crf",
-                        "23",
-                        "-c:a",
-                        "aac",
-                        "-b:a",
-                        "128k",
-                        "-y",
-                        temp_short.name,
-                    ],
-                    check=True,
-                    capture_output=True,
-                )
-
-                # 🔥 Cover desde el short ya generado
-                subprocess.run(
-                    [
-                        "ffmpeg",
-                        "-i",
-                        temp_short.name,
-                        "-ss",
-                        "1",
-                        "-vframes",
-                        "1",
-                        "-y",
-                        temp_cover.name,
-                    ],
-                    check=True,
-                    capture_output=True,
-                )
-
-                shorts_data.append(
-                    {
-                        "short_path": temp_short.name,
-                        "cover_path": temp_cover.name,
-                        "start": start,
-                        "end": end,
-                    }
-                )
-
-            except Exception:
-                # limpiar si falla
-                if os.path.exists(temp_short.name):
-                    os.unlink(temp_short.name)
-                if os.path.exists(temp_cover.name):
-                    os.unlink(temp_cover.name)
-                raise
-
-    return shorts_data
 
 
 # =========================================================
@@ -297,54 +336,67 @@ def generate_shorts(video_path, video):
 # =========================================================
 def delete_video(video):
     """
-    Borra un Video y todos sus Shorts asociados, tanto de la base de datos
-    como de Cloudinary.
+    Borra un Video y todos sus Shorts asociados,
+    tanto de la base de datos como de Cloudinary.
     """
-
     try:
         with transaction.atomic():
+
             # 1️⃣ Borrar shorts + covers
-            shorts = video.shorts.all()
-            for short in shorts:
-                try:
-                    # Borrar video del short
-                    if short.cloudinary_public_id:
+            for short in video.shorts.all():
+
+                # Borrar video del short en Cloudinary
+                if short.cloudinary_public_id:
+                    try:
                         cloudinary.uploader.destroy(
                             short.cloudinary_public_id, resource_type="video"
                         )
                         logger.info(
                             f"Short video Cloudinary borrado: {short.cloudinary_public_id}"
                         )
+                    except Exception as e:
+                        logger.error(f"Error borrando short video {short.id}: {str(e)}")
 
-                    # Borrar cover del short
-                    if short.cover_cloudinary_public_id:
+                # Borrar cover del short en Cloudinary
+                if short.cover_cloudinary_public_id:
+                    try:
                         cloudinary.uploader.destroy(
                             short.cover_cloudinary_public_id, resource_type="image"
                         )
                         logger.info(
                             f"Short cover Cloudinary borrado: {short.cover_cloudinary_public_id}"
                         )
+                    except Exception as e:
+                        logger.error(f"Error borrando short cover {short.id}: {str(e)}")
 
-                except Exception as e:
-                    logger.error(
-                        f"Error borrando short o cover {short.id} en Cloudinary: {str(e)}"
-                    )
-                finally:
-                    short.delete()
+                # Borrar short en DB
+                short.delete()
 
-            # 2️⃣ Borrar video original
-            try:
-                if video.cloudinary_public_id:
+            # 2️⃣ Borrar cover original del video
+            if video.cover_original_cloudinary_public_id:
+                try:
                     cloudinary.uploader.destroy(
-                        video.cloudinary_public_id, resource_type="video"
+                        video.cover_original_cloudinary_public_id,
+                        resource_type="image",
                     )
                     logger.info(
-                        f"Video Cloudinary borrado: {video.cloudinary_public_id}"
+                        f"Cover original borrado: {video.cover_original_cloudinary_public_id}"
                     )
-            except Exception as e:
-                logger.error(f"Error borrando video {video.id} en Cloudinary: {str(e)}")
+                except Exception as e:
+                    logger.error(f"Error borrando cover original {video.id}: {str(e)}")
 
-            # 3️⃣ Borrar instancia Video en DB
+            # 3️⃣ Borrar video original en Cloudinary
+            if video.cloudinary_public_id:
+                try:
+                    cloudinary.uploader.destroy(
+                        video.cloudinary_public_id,
+                        resource_type="video",
+                    )
+                    logger.info(f"Video original borrado: {video.cloudinary_public_id}")
+                except Exception as e:
+                    logger.error(f"Error borrando video original {video.id}: {str(e)}")
+
+            # 4️⃣ Borrar instancia Video en DB
             video.delete()
 
     except Exception as e:
