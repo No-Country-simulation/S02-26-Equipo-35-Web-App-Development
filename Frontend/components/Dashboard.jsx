@@ -5,12 +5,12 @@ import { VideoConfig } from "./dashboard/VideoConfig";
 import { ProjectCard } from "./common/ProjectCard";
 import { Button } from "./Button";
 import { getVideos } from "../services/videoService";
-
+import { useNavigate } from "react-router-dom";
 export const Dashboard = ({ onFileSelect, recentProjects }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [recentVideos, setRecentVideos] = useState([]);
   const { t } = useApp();
-
+  const navigate = useNavigate();
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -88,11 +88,21 @@ export const Dashboard = ({ onFileSelect, recentProjects }) => {
         </div>
         <div className='row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4'>
           {recentVideos.map((video) => (
-            <div key={video.id} className='col'>
+            <div
+              key={video.id}
+              className='col'
+              style={{ cursor: "pointer" }}
+              onClick={() =>
+                navigate(`/projects/${video.id}`, {
+                  state: { videoName: video.file_name },
+                })
+              }
+            >
               <ProjectCard
                 project={{
                   id: video.id,
                   file_name: video.file_name,
+                  cover_original_url: video.cover_original_url,
                   file_url: video.file_url,
                   status: video.status,
                   create_at: new Date(video.created_at).toLocaleString(),

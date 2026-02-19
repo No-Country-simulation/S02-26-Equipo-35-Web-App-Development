@@ -20,6 +20,7 @@ import { LoginView } from "./components/auth/LoginView";
 import { RegisterView } from "./components/auth/RegisterView";
 import { PrivateRoute } from "./components/auth/PrivateRoute";
 import { useAuth } from "./contexts/AuthContext";
+import { VideoShortsView } from "./components/VideoShortsView";
 
 function AppContent() {
   const navigate = useNavigate();
@@ -223,6 +224,14 @@ function AppContent() {
                 element={
                   <PrivateRoute>
                     <HelpView />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path='/projects/:videoId'
+                element={
+                  <PrivateRoute>
+                    <VideoShortsView />
                   </PrivateRoute>
                 }
               />

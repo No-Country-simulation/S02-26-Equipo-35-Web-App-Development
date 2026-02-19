@@ -3,75 +3,118 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { UserPlus, Mail, Lock, User } from "lucide-react";
 import { Button } from "../Button";
+import { registerRequest } from "../../services/authService";
 
 export const RegisterView = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
-    const fakeResponse = {
-      user: { id: 2, name, email },
-      token: "fake-jwt-token",
-    };
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
 
-    register(fakeResponse.user, fakeResponse.token);
-    navigate("/");
+    try {
+      const data = await registerRequest({
+        username,
+        email,
+        password,
+        password2: password,
+        first_name: firstName,
+        last_name: lastName,
+      });
+
+      register(data.user, data.token);
+      navigate("/");
+    } catch (err) {
+      console.error("Register error:", err.message);
+      setError("Registration failed. Please check your data.");
+    }
   };
 
   return (
-    <div className='container min-vh-100 d-flex align-items-center justify-content-center py-5 animate-fade-in'>
+    <div className='container min-vh-100 d-flex align-items-center justify-content-center py-5'>
       <div
         className='card border-0 shadow-lg rounded-5 bg-card border-base w-100'
-        style={{ maxWidth: "480px" }}
+        style={{ maxWidth: "500px" }}
       >
         <div className='card-body p-5'>
-          <div className='text-center mb-5'>
-            <div className='bg-success bg-opacity-10 p-4 rounded-circle d-inline-flex mb-4'>
+          <div className='text-center mb-4'>
+            <div className='bg-success bg-opacity-10 p-4 rounded-circle d-inline-flex mb-3'>
               <UserPlus className='w-8 h-8 text-success' />
             </div>
-            <h2 className='fw-bold text-base mb-2'>Create Account</h2>
-            <p className='text-muted small'>
-              Start creating powerful AI video shorts
-            </p>
+            <h2 className='fw-bold'>Create Account</h2>
           </div>
 
+          {error && (
+            <div className='alert alert-danger small py-2'>{error}</div>
+          )}
+
           <form onSubmit={handleSubmit}>
-            <div className='mb-4'>
-              <label className='form-label fw-bold text-base small'>
-                Full Name
-              </label>
-              <div className='input-group bg-surface rounded-pill border border-base shadow-sm'>
+            {/* Username */}
+            <div className='mb-3'>
+              <label className='form-label fw-bold small'>Username</label>
+              <div className='input-group rounded-pill border shadow-sm'>
                 <span className='input-group-text bg-transparent border-0'>
                   <User className='w-4 h-4 text-muted' />
                 </span>
                 <input
                   type='text'
-                  className='form-control border-0 bg-transparent rounded-pill'
-                  placeholder='John Doe'
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  className='form-control border-0 rounded-pill'
+                  placeholder='username123'
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                 />
               </div>
             </div>
 
-            <div className='mb-4'>
-              <label className='form-label fw-bold text-base small'>
-                Email
-              </label>
-              <div className='input-group bg-surface rounded-pill border border-base shadow-sm'>
+            {/* First Name */}
+            <div className='mb-3'>
+              <label className='form-label fw-bold small'>First Name</label>
+              <input
+                type='text'
+                className='form-control rounded-pill shadow-sm'
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
+            </div>
+
+            {/* Last Name */}
+            <div className='mb-3'>
+              <label className='form-label fw-bold small'>Last Name</label>
+              <input
+                type='text'
+                className='form-control rounded-pill shadow-sm'
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+              />
+            </div>
+
+            {/* Email */}
+            <div className='mb-3'>
+              <label className='form-label fw-bold small'>Email</label>
+              <div className='input-group rounded-pill border shadow-sm'>
                 <span className='input-group-text bg-transparent border-0'>
                   <Mail className='w-4 h-4 text-muted' />
                 </span>
                 <input
                   type='email'
-                  className='form-control border-0 bg-transparent rounded-pill'
+                  className='form-control border-0 rounded-pill'
                   placeholder='you@example.com'
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -80,20 +123,22 @@ export const RegisterView = () => {
               </div>
             </div>
 
+            {/* Password */}
             <div className='mb-4'>
-              <label className='form-label fw-bold text-base small'>
-                Password
+              <label className='form-label fw-bold small'>
+                Password (min 6 characters)
               </label>
-              <div className='input-group bg-surface rounded-pill border border-base shadow-sm'>
+              <div className='input-group rounded-pill border shadow-sm'>
                 <span className='input-group-text bg-transparent border-0'>
                   <Lock className='w-4 h-4 text-muted' />
                 </span>
                 <input
                   type='password'
-                  className='form-control border-0 bg-transparent rounded-pill'
-                  placeholder='••••••••'
+                  className='form-control border-0 rounded-pill'
+                  placeholder='••••••'
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  minLength={6}
                   required
                 />
               </div>

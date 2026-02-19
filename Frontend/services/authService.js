@@ -18,6 +18,35 @@ export const loginRequest = async (username, password) => {
   return await response.json();
 };
 
+export const registerRequest = async ({
+  username,
+  email,
+  password,
+  password2,
+  first_name,
+  last_name,
+}) => {
+  const formData = new FormData();
+  formData.append("username", username);
+  formData.append("email", email);
+  formData.append("password", password);
+  formData.append("password2", password2);
+  formData.append("first_name", first_name);
+  formData.append("last_name", last_name);
+
+  const response = await fetch(`${API_URL}/register/`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(JSON.stringify(error));
+  }
+
+  return await response.json();
+};
+
 export const logoutRequest = async (token) => {
   const response = await fetch(`${API_URL}/logout/`, {
     method: "POST",

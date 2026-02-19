@@ -57,3 +57,41 @@ export const getVideos = async (page = 1) => {
   const data = await response.json();
   return data.results ?? [];
 };
+
+
+export const getVideoById = async (videoId) => {
+  const token = getAuthToken();
+
+  const response = await fetch(`${API_URL}/videos/${videoId}/`, {
+    headers: {
+      Authorization: `Token ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return await response.json();
+};
+
+export const updateVideoName = async (videoId, file_name) => {
+  const token = getAuthToken();
+
+  const formData = new FormData();
+  formData.append("file_name", file_name);
+
+  const response = await fetch(`${API_URL}/videos/${videoId}/`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Token ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return await response.json();
+};

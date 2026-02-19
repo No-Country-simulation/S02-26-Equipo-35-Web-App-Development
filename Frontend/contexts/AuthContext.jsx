@@ -25,7 +25,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("token", tokenData);
     localStorage.setItem("user", JSON.stringify(userData));
   };
-
+  const registerUser = (user, token) => {
+    setUser(user);
+    setToken(token);
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+  };
   const logout = async () => {
     try {
       if (token) {
@@ -43,7 +48,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, token, login, logout, register: registerUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

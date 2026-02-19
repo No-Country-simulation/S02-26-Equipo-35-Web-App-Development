@@ -23,6 +23,7 @@ export const ProjectCard = ({ project, variant = "grid" }) => {
         return null;
     }
   };
+  console.log(project);
 
   const getStatusText = (status) => {
     const statusMap = {
@@ -43,7 +44,7 @@ export const ProjectCard = ({ project, variant = "grid" }) => {
               style={{ width: "85px", height: "115px" }}
             >
               <img
-                src={project.file_url}
+                src={project.cover_original_url}
                 alt={project.file_name}
                 className='w-100 h-100 object-fit-cover opacity-90 transition-all'
               />
