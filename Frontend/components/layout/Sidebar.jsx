@@ -1,4 +1,5 @@
 import React from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import { NavLink } from "react-router-dom";
 import {
   Layout,
@@ -10,6 +11,9 @@ import {
 } from "lucide-react";
 
 export const Sidebar = ({ language, setLanguage, theme, toggleTheme, t }) => {
+
+  const { user } = useAuth();
+
   return (
     <nav className='col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm px-0 h-100 bg-glass position-fixed top-0 start-0 z-3 p-0'>
       <div className='d-flex flex-column h-100'>
@@ -81,23 +85,23 @@ export const Sidebar = ({ language, setLanguage, theme, toggleTheme, t }) => {
           {/* Profile */}
           <NavLink
             to='/profile'
-            className='btn w-100 d-flex align-items-center border rounded-4 p-3'
+            className='btn w-100 d-flex align-items-center border rounded-4 px-2 py-3'
           >
             <div
-              className='rounded-circle bg-primary text-white d-flex align-items-center justify-content-center'
+              className='rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0'
               style={{ width: "36px", height: "36px" }}
             >
-              JD
+              {user?.username?.charAt(0).toUpperCase()}
             </div>
 
             <div className='ms-3 text-start'>
-              <div className='small fw-bold'>John Doe</div>
+              <div className='small fw-bold'>{user?.username || "Usuario"}</div>
               <div className='text-muted' style={{ fontSize: "0.7rem" }}>
-                john.doe@example.com
+                {user?.email || ""}
               </div>
+              <LogOut size={16} className='ms-auto text-muted opacity-50' />
             </div>
 
-            <LogOut size={16} className='ms-auto text-muted opacity-50' />
           </NavLink>
         </div>
       </div>
