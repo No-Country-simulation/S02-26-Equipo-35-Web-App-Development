@@ -21,6 +21,16 @@ class Video(models.Model):
     file_url = models.URLField(max_length=500, null=True, blank=True)
     cloudinary_public_id = models.CharField(max_length=255, null=True, blank=True)
 
+    # -----------------------------
+    # Cover del video original
+    # -----------------------------
+    cover_original_url = models.URLField(max_length=500, null=True, blank=True)
+    cover_original_cloudinary_public_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+
     duration_seconds = models.FloatField(null=True, blank=True)
 
     status = models.CharField(
