@@ -16,6 +16,8 @@ class VideoUploadSerializer(serializers.ModelSerializer):
     # Metadata generada por backend (solo lectura)
     file_url = serializers.URLField(read_only=True)
     cloudinary_public_id = serializers.CharField(read_only=True)
+    cover_original_url = serializers.URLField(read_only=True)
+    cover_original_cloudinary_public_id = serializers.CharField(read_only=True)
     duration_seconds = serializers.FloatField(read_only=True)
     width = serializers.IntegerField(read_only=True)
     height = serializers.IntegerField(read_only=True)
@@ -34,6 +36,8 @@ class VideoUploadSerializer(serializers.ModelSerializer):
             "video_file",
             "file_url",
             "cloudinary_public_id",
+            "cover_original_url",
+            "cover_original_cloudinary_public_id",
             "duration_seconds",
             "width",
             "height",
@@ -47,6 +51,8 @@ class VideoUploadSerializer(serializers.ModelSerializer):
             "created_at",
             "file_url",
             "cloudinary_public_id",
+            "cover_original_url",
+            "cover_original_cloudinary_public_id",
             "duration_seconds",
             "width",
             "height",
@@ -97,6 +103,7 @@ class VideoResponseSerializer(serializers.ModelSerializer):
             "id",
             "file_name",
             "file_url",
+            "cover_original_url",
             "duration_seconds",
             "width",
             "height",
