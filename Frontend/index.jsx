@@ -4,6 +4,8 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./index.css";
 import App from "./App";
 import { BrowserRouter } from "react-router-dom";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/ReactToastify.css';
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
@@ -13,5 +15,6 @@ if (!rootElement) {
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <App />
-  </BrowserRouter>,
+    <ToastContainer/>
+  </BrowserRouter>
 );

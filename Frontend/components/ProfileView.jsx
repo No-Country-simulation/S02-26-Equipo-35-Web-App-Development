@@ -1,10 +1,12 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import { User, Zap, Video, LogOut, Sun, Moon} from "lucide-react";
 import { Button } from "./Button";
 import { useApp } from "../contexts/AppContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { getProfile } from "../services/userService";
+import { ProfileAvatar } from "./ProfileAvatar";
+
 
 export const ProfileView = () => {
   const { t, theme, toggleTheme, language, setLanguage } = useApp();
@@ -39,7 +41,7 @@ export const ProfileView = () => {
   };
 
   if (loading) return <div className="text-center py-5">Loading...</div>;
-  if (!profile) return <div className="text-center py-5">No profile data</div>;
+  if (!profile) return <div className="text-center py-5">No profile data</div>
 
   return (
     <div className='container py-4 animate-fade-in'>
@@ -48,17 +50,13 @@ export const ProfileView = () => {
         <div className='card-body p-4 p-md-5'>
           <div className='row align-items-center'>
             <div className='col-auto mb-4 mb-md-0'>
-              <div className='position-relative'>
-                <div
-                  className='rounded-circle bg-primary bg-gradient d-flex align-items-center justify-content-center text-white shadow fw-bold border border-4 border-card'
-                  style={{
-                    width: "110px",
-                    height: "110px",
-                    fontSize: "2.5rem",
-                  }}
-                >
-                  {profile.username?.charAt(0).toUpperCase()}
-                </div>
+              <div className="position-relative">
+                <ProfileAvatar
+                  profile={profile}
+                  setProfile={setProfile}
+                  token={token}
+                />
+
                 <div
                   className='position-absolute bottom-0 end-0 bg-success border border-4 border-card rounded-circle shadow-sm'
                   style={{ width: "1.8rem", height: "1.8rem" }}
