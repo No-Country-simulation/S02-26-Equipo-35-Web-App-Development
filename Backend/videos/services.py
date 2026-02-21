@@ -10,7 +10,6 @@ import cloudinary.uploader
 from django.db import transaction
 
 from .models import Video, ProcessingJob
-from .audio_processor import AudioProcessor
 from shorts.models import Short
 
 logger = logging.getLogger(__name__)
@@ -174,7 +173,6 @@ def get_video_metadata(video_path):
 def process_video_task(video_id, temp_video_path, file_name):
     video = None
     job = None
-    audio_processor = None
     cover_original_path = None
     shorts_local_data = []
 
@@ -234,7 +232,6 @@ def process_video_task(video_id, temp_video_path, file_name):
 
         job.progress = 70
         job.save()
-        
 
         # ============================
         # 🔥 SUBIDA A CLOUDINARY (SOLO SI TODO OK)
