@@ -17,7 +17,7 @@ class AudioProcessor:
 
     def __init__(self):
 
-        self.api_key = "AIzaSyBc0kZWvHCaQ0Cdv6Tj0y3kl8GpKGEyRGA"
+        self.api_key = os.getenv('API_KEY_GEMINI')
 
         if not self.api_key:
             raise ValueError("API_KEY_GEMINI no configurada")

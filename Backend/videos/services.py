@@ -11,6 +11,7 @@ from django.db import transaction
 
 from .models import Video, ProcessingJob
 from shorts.models import Short
+from .audio_processor import AudioProcessor
 
 logger = logging.getLogger(__name__)
 
