@@ -11,6 +11,7 @@ from django.db import transaction
 
 from .models import Video, ProcessingJob
 from shorts.models import Short
+from .audio_processor import AudioProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ def generate_cover_from_video(video_path, second=1):
 # =========================================================
 # GENERATE SHORTS
 # =========================================================
-def generate_shorts(video_path, video):
+def generate_shorts(video_path, video, clips_data):
     """
     🔥 1 SOLO FFMPEG POR SHORT
     🔥 720x1280
@@ -73,11 +74,12 @@ def generate_shorts(video_path, video):
     shorts_data = []
     total = video.duration_seconds
 
-    segments = [
-        (0, total * 0.3),
-        (total * 0.35, total * 0.65),
-        (total * 0.7, total - 1),
-    ]
+    # segments = [
+    #     (0, total * 0.3),
+    #     (total * 0.35, total * 0.65),
+    #     (total * 0.7, total - 1),
+    # ]
+    segments = [(clip["start"], clip["end"]) for clip in clips_data]
 
     for start, end in segments:
         start = round(start, 3)
@@ -204,6 +206,17 @@ def process_video_task(video_id, temp_video_path, file_name):
 
         job.progress = 25
         job.save()
+        
+        # -----------------------
+        # 2.5 Procesar audio para usar el modelo gemini
+        # -----------------------
+        
+        audio_processor = AudioProcessor()
+        clips_data = audio_processor.process_video(temp_video_path) # Aqui se obtiene el json con los shorts
+        logger.info(f"📊 Clips encontrados: {clips_data}")
+        
+        job.progress = 30
+        job.save()
 
         # -----------------------
         # GENERAR COVER ORIGINAL
@@ -216,7 +229,7 @@ def process_video_task(video_id, temp_video_path, file_name):
         # -----------------------
         # GENERAR SHORTS LOCAL
         # -----------------------
-        shorts_local_data = generate_shorts(temp_video_path, video)
+        shorts_local_data = generate_shorts(temp_video_path, video,clips_data)
 
         job.progress = 70
         job.save()
@@ -279,6 +292,8 @@ def process_video_task(video_id, temp_video_path, file_name):
         # -----------------------
         # CLEAN TEMP FILES
         # -----------------------
+        logger.info(f"||||||||||||||||||Borrando-Video|||||||||||")
+        
         if cover_original_path and os.path.exists(cover_original_path):
             os.unlink(cover_original_path)
 
