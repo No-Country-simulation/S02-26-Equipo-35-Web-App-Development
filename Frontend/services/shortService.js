@@ -51,3 +51,24 @@ export const getShorts = async (page = 1) => {
   const data = await response.json();
   return data.results ?? [];
 };
+
+export const deleteShort = async (id) => {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("User not authenticated");
+  }
+
+  const response = await fetch(`${API_URL}/shorts/${id}/`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Token ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return true;
+};

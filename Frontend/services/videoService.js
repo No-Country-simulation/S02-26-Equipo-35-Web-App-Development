@@ -95,3 +95,47 @@ export const updateVideoName = async (videoId, file_name) => {
 
   return await response.json();
 };
+export const deleteVideo = async (id) => {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("User not authenticated");
+  }
+
+  const response = await fetch(`${API_URL}/videos/${id}/`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Token ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return true;
+};
+export const getVideoStatus = async (videoId) => {
+  const token = getAuthToken();
+
+  if (!token) {
+    throw new Error("User not authenticated");
+  }
+
+  const response = await fetch(
+    `${API_URL}/videos/${videoId}/status/`,
+    {
+      headers: {
+        Authorization: `Token ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Error ${response.status}: ${await response.text()}`
+    );
+  }
+
+  return await response.json();
+};

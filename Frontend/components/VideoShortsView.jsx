@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getShortsByVideo } from "../services/shortService";
 import { getVideoById, updateVideoName } from "../services/videoService";
 import { ArrowLeft, Pencil, Check, X } from "lucide-react";
-
+import { deleteShort } from "../services/shortService";
+import { ConfirmModal } from "./common/ConfirmModal";
 export const VideoShortsView = () => {
   const { videoId } = useParams();
   const navigate = useNavigate();
@@ -14,7 +15,26 @@ export const VideoShortsView = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [shortToDelete, setShortToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
+  const handleDeleteShort = async (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this short?",
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await deleteShort(id);
+
+      setShorts((prev) => prev.filter((s) => s.id !== id));
+    } catch (error) {
+      console.error(error);
+      alert("Error deleting short");
+    }
+  };
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -115,6 +135,15 @@ export const VideoShortsView = () => {
         {shorts.map((short) => (
           <div key={short.id} className='col-md-4'>
             <div className='card shadow-sm border-0 h-100'>
+              <button
+                className='btn btn-danger btn-sm position-absolute top-0 end-0 m-2 z-3'
+                onClick={() => {
+                  setShortToDelete(short);
+                  setShowDeleteModal(true);
+                }}
+              >
+                Delete
+              </button>
               <video
                 src={short.file_url}
                 controls
@@ -131,6 +160,47 @@ export const VideoShortsView = () => {
           </div>
         ))}
       </div>
+      <ConfirmModal
+        show={showDeleteModal}
+        title='Delete Short'
+        confirmText='Yes, Delete Short'
+        loading={deleting}
+        onCancel={() => {
+          setShowDeleteModal(false);
+          setShortToDelete(null);
+        }}
+        onConfirm={async () => {
+          try {
+            setDeleting(true);
+            await deleteShort(shortToDelete.id);
+
+            setShorts((prev) => prev.filter((s) => s.id !== shortToDelete.id));
+
+            setShowDeleteModal(false);
+            setShortToDelete(null);
+          } finally {
+            setDeleting(false);
+          }
+        }}
+        message={
+          <>
+            <p>Are you sure you want to delete this short?</p>
+
+            <p className='mt-3 mb-2 fw-semibold text-danger'>
+              This will permanently delete:
+            </p>
+
+            <ul className='ps-3'>
+              <li>The short video file</li>
+              <li>All associated Cloudinary resources</li>
+            </ul>
+
+            <p className='mt-3 small text-muted'>
+              This action cannot be undone.
+            </p>
+          </>
+        }
+      />
     </div>
   );
 };

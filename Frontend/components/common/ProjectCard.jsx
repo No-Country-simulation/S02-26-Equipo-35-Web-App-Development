@@ -100,7 +100,7 @@ export const ProjectCard = ({ project, variant = "grid" }) => {
 
   // Default Grid variant (for ProjectsView)
   return (
-    <div className='card h-100 border-0 shadow-sm rounded-5 overflow-hidden project-card transition-all hover-translate-y group bg-card border-base'>
+    <div className='card h-100 border-0 shadow-sm rounded-5 overflow-hidden project-card transition-all'>
       <div
         className='position-relative bg-light transition-opacity overflow-hidden'
         style={{ aspectRatio: "9/16" }}

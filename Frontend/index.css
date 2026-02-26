@@ -243,3 +243,73 @@ body {
   background: rgba(0, 0, 0, 0.7);
   z-index: 1040;
 }
+.modal-backdrop-custom {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-content-custom {
+  background: rgb(51, 53, 147);
+  padding: 2rem;
+  border-radius: 16px;
+  max-width: 420px;
+  width: 90%;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.project-hover {
+  transition: all 0.25s ease;
+}
+
+.project-card {
+  border: 1px solid transparent;
+  transition: all 0.25s ease;
+}
+
+.project-card:hover {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+} n
+
+.transition-scale {
+  transition: transform 0.4s ease;
+}
+
+.project-hover:hover .transition-scale {
+  transform: scale(1.05);
+}
+
+.hover-overlay {
+  transition: opacity 0.3s ease;
+}
+
+.project-hover:hover .hover-overlay {
+  opacity: 1 !important;
+}
+
+.delete-hover {
+  transition: opacity 0.2s ease;
+}
+
+.project-hover:hover .delete-hover {
+  opacity: 1 !important;
+}
