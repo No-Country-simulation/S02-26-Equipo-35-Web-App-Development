@@ -30,6 +30,7 @@ function AppContent() {
   const [shorts, setShorts] = useState([]);
   const location = useLocation();
   const { theme, toggleTheme, language, setLanguage, t } = useApp();
+  const [currentVideoId, setCurrentVideoId] = useState(null);
   const isAuthPage =
     location.pathname === "/login" || location.pathname === "/register";
 
@@ -50,54 +51,38 @@ function AppContent() {
     setLogs((prev) => [...prev, newLog]);
   };
 
-  const handleFileSelect = (file) => {
-    setSelectedFile(file);
-    setLogs([]);
-    navigate("/processing");
-  };
-
-  const handleProcessingComplete = async () => {
-    if (!selectedFile) return;
-
+  const handleFileSelect = async (file) => {
     try {
+      setSelectedFile(file);
+      setLogs([]);
+
       addLog("Uploading video...", "info");
 
-      const video = await uploadVideo(selectedFile);
+      const video = await uploadVideo(file);
       const videoId = video.id ?? video.video_id;
 
       if (!videoId) {
-        throw new Error("Video ID not found in response");
+        throw new Error("Video ID not found");
       }
+
+      setCurrentVideoId(videoId);
 
       addLog("Video uploaded. Processing started...", "info");
-      addLog("Waiting for shorts to be generated...", "info");
 
-      let generatedShorts = [];
-      let attempts = 0;
-      const maxAttempts = 20;
-      const delay = 3000;
+      navigate("/processing");
+    } catch (error) {
+      console.error(error);
+      addLog("Upload failed", "error");
+    }
+  };
 
-      while (attempts < maxAttempts) {
-        generatedShorts = await getShortsByVideo(videoId);
-        console.log("Attempt", attempts, "shorts:", generatedShorts);
-        if (generatedShorts.length === 3) break;
-
-        attempts++;
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-
-      if (generatedShorts.length === 0) {
-        addLog("Processing is taking longer than expected.", "warning");
-        return;
-      }
-
-      addLog("Shorts generated successfully!", "success");
-
+  const handleProcessingComplete = async () => {
+    try {
+      const generatedShorts = await getShortsByVideo(currentVideoId);
       setShorts(generatedShorts);
       navigate("/result");
     } catch (error) {
-      console.error(error);
-      addLog("Error processing video", "error");
+      addLog("Error fetching shorts", "error");
     }
   };
 
@@ -181,10 +166,8 @@ function AppContent() {
                 element={
                   <PrivateRoute>
                     <ProcessingView
-                      file={selectedFile}
+                      videoId={currentVideoId}
                       onComplete={handleProcessingComplete}
-                      addLog={addLog}
-                      logs={logs}
                     />
                   </PrivateRoute>
                 }

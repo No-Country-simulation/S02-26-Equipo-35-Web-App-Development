@@ -144,12 +144,18 @@ export const VideoShortsView = () => {
               >
                 Delete
               </button>
-              <video
-                src={short.file_url}
-                controls
-                className='card-img-top rounded'
-                style={{ height: "400px", objectFit: "cover" }}
-              />
+              <div className='ratio' style={{ aspectRatio: "9 / 16" }}>
+                <video
+                  src={short.file_url}
+                  controls
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                    backgroundColor: "black",
+                  }}
+                />
+              </div>
               <div className='card-body'>
                 <p className='small text-muted mb-1'>
                   Start: {short.start_second}s
