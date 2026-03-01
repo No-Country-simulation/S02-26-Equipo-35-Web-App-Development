@@ -7,6 +7,9 @@ import json
 logger = logging.getLogger(__name__)
 
 
+whisper_model = whisper.load_model("base")
+
+
 class AudioProcessor:
     """
     Pipeline profesional de análisis de video:
@@ -17,14 +20,14 @@ class AudioProcessor:
 
     def __init__(self):
 
-        self.api_key = os.getenv('API_KEY_GEMINI')
+        self.api_key = os.getenv("API_KEY_GEMINI")
 
         if not self.api_key:
             raise ValueError("API_KEY_GEMINI no configurada")
 
         self.client = genai.Client(api_key=self.api_key)
 
-        self.whisper_model = whisper.load_model("base")
+        self.whisper_model = whisper_model
 
         logger.info("AudioProcessor configurado correctamente")
 
@@ -40,9 +43,7 @@ class AudioProcessor:
         logger.info(f"✅ Paso 1")
 
         result = self.whisper_model.transcribe(
-            video_path,
-            task="transcribe",
-            verbose=False
+            video_path, task="transcribe", verbose=False
         )
 
         segments = result.get("segments", [])
@@ -54,9 +55,10 @@ class AudioProcessor:
             {
                 "start": round(seg["start"], 2),
                 "end": round(seg["end"], 2),
-                "text": seg["text"].strip()
+                "text": seg["text"].strip(),
             }
-            for seg in segments if seg["text"].strip()
+            for seg in segments
+            if seg["text"].strip()
         ]
 
         logger.info(f"Transcripción completada con {len(formatted_segments)} segmentos")
@@ -71,8 +73,7 @@ class AudioProcessor:
         logger.info("Analizando segmentos con Gemini")
 
         segments_text = "\n".join(
-            f"[{s['start']} - {s['end']}] {s['text']}"
-            for s in segments
+            f"[{s['start']} - {s['end']}] {s['text']}" for s in segments
         )
 
         prompt = f"""
@@ -106,9 +107,13 @@ Y solo debes devolver lo que te pido nada mas, ningun punto extra ni un entendid
 
         response_text = response.text.strip()
 
-
         try:
-            response_text = response_text.strip().removeprefix("```json").removesuffix("```").strip()
+            response_text = (
+                response_text.strip()
+                .removeprefix("```json")
+                .removesuffix("```")
+                .strip()
+            )
             # print("=====================================================")
             # print(response_text)
             # print("=====================================================")
@@ -116,10 +121,7 @@ Y solo debes devolver lo que te pido nada mas, ningun punto extra ni un entendid
             return clips
         except json.JSONDecodeError:
             logger.error("Gemini devolvió JSON inválido")
-            return {
-                "error": "Respuesta inválida de Gemini",
-                "raw": response_text
-            }
+            return {"error": "Respuesta inválida de Gemini", "raw": response_text}
 
     def process_video(self, video_path):
         """

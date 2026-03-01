@@ -93,10 +93,10 @@ def generate_shorts(video_path, video, clips_data):
                         "ffmpeg",
                         "-ss",
                         str(start),
-                        "-to",
-                        str(end),
                         "-i",
                         video_path,
+                        "-t",
+                        str(end - start),
                         "-vf",
                         "crop=ih*9/16:ih,scale=720:1280",
                         "-c:v",
@@ -206,15 +206,17 @@ def process_video_task(video_id, temp_video_path, file_name):
 
         job.progress = 25
         job.save()
-        
+
         # -----------------------
         # 2.5 Procesar audio para usar el modelo gemini
         # -----------------------
-        
+
         audio_processor = AudioProcessor()
-        clips_data = audio_processor.process_video(temp_video_path) # Aqui se obtiene el json con los shorts
+        clips_data = audio_processor.process_video(
+            temp_video_path
+        )  # Aqui se obtiene el json con los shorts
         logger.info(f"📊 Clips encontrados: {clips_data}")
-        
+
         job.progress = 30
         job.save()
 
@@ -229,7 +231,7 @@ def process_video_task(video_id, temp_video_path, file_name):
         # -----------------------
         # GENERAR SHORTS LOCAL
         # -----------------------
-        shorts_local_data = generate_shorts(temp_video_path, video,clips_data)
+        shorts_local_data = generate_shorts(temp_video_path, video, clips_data)
 
         job.progress = 70
         job.save()
@@ -293,7 +295,7 @@ def process_video_task(video_id, temp_video_path, file_name):
         # CLEAN TEMP FILES
         # -----------------------
         logger.info(f"||||||||||||||||||Borrando-Video|||||||||||")
-        
+
         if cover_original_path and os.path.exists(cover_original_path):
             os.unlink(cover_original_path)
 
