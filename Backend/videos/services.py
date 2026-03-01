@@ -17,6 +17,23 @@ logger = logging.getLogger(__name__)
 
 
 # =========================================================
+# FALL
+# =========================================================
+def generate_fallback_clips(duration):
+    """
+    Genera 3 clips automáticos basados en la duración total real del video.
+    """
+    if duration < 20:
+        return [{"start": 0, "end": duration}]
+
+    return [
+        {"start": 0, "end": min(30, duration)},
+        {"start": duration * 0.3, "end": duration * 0.6},
+        {"start": duration * 0.6, "end": max(duration - 1, duration * 0.6)},
+    ]
+
+
+# =========================================================
 # FFMPEG WRAPPER
 # =========================================================
 def run_ffmpeg(command):
@@ -24,7 +41,6 @@ def run_ffmpeg(command):
         subprocess.run(
             command,
             check=True,
-            capture_output=True,
             text=True,
         )
     except subprocess.CalledProcessError as e:
@@ -72,14 +88,15 @@ def generate_shorts(video_path, video, clips_data):
     🔥 cover generado desde el short ya procesado
     """
     shorts_data = []
-    total = video.duration_seconds
 
-    # segments = [
-    #     (0, total * 0.3),
-    #     (total * 0.35, total * 0.65),
-    #     (total * 0.7, total - 1),
-    # ]
-    segments = [(clip["start"], clip["end"]) for clip in clips_data]
+    segments = []
+
+    for clip in clips_data:
+        start = float(clip.get("start", 0))
+        end = float(clip.get("end", 0))
+
+        if end > start and end - start > 3:
+            segments.append((start, end))
 
     for start, end in segments:
         start = round(start, 3)
@@ -153,7 +170,19 @@ def get_video_metadata(video_path):
     result = subprocess.run(cmd, capture_output=True, text=True, check=True)
     data = json.loads(result.stdout)
 
-    video_stream = next(s for s in data["streams"] if s["codec_type"] == "video")
+    video_stream = next(
+        (s for s in data["streams"] if s["codec_type"] == "video"),
+        None,
+    )
+    if not video_stream:
+        raise ValueError("No video stream found")
+
+    audio_stream = next(
+        (s for s in data["streams"] if s["codec_type"] == "audio"),
+        None,
+    )
+    if not audio_stream:
+        logger.warning("⚠️ No se detectó stream de audio en el video")
 
     width = int(video_stream["width"])
     height = int(video_stream["height"])
@@ -164,6 +193,7 @@ def get_video_metadata(video_path):
         "height": height,
         "aspect_ratio": f"{width // divisor}:{height // divisor}",
         "duration": float(data["format"].get("duration", 0)),
+        "has_audio": audio_stream is not None,
     }
 
 
@@ -201,7 +231,9 @@ def process_video_task(video_id, temp_video_path, file_name):
         video.height = metadata["height"]
         video.aspect_ratio = metadata["aspect_ratio"]
         video.duration_seconds = metadata["duration"]
+        video.has_audio = metadata["has_audio"]
         video.file_size = os.path.getsize(temp_video_path)
+
         video.save()
 
         job.progress = 25
@@ -211,10 +243,24 @@ def process_video_task(video_id, temp_video_path, file_name):
         # 2.5 Procesar audio para usar el modelo gemini
         # -----------------------
 
-        audio_processor = AudioProcessor()
-        clips_data = audio_processor.process_video(
-            temp_video_path
-        )  # Aqui se obtiene el json con los shorts
+        duration = metadata["duration"]
+
+        if metadata["has_audio"]:
+            audio_processor = AudioProcessor()
+            clips_data = audio_processor.process_video(temp_video_path)
+
+            if (
+                not clips_data
+                or not isinstance(clips_data, list)
+                or len(clips_data) == 0
+            ):
+                logger.warning("⚠️ Gemini inválido o vacío. Usando fallback.")
+                clips_data = generate_fallback_clips(duration)
+
+        else:
+            logger.warning("⚠️ El video no tiene audio. Generando shorts automáticos.")
+            clips_data = generate_fallback_clips(duration)
+
         logger.info(f"📊 Clips encontrados: {clips_data}")
 
         job.progress = 30

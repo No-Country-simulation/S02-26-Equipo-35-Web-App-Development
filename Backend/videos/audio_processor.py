@@ -3,6 +3,8 @@ from google import genai
 import os
 import logging
 import json
+import tempfile
+import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +33,30 @@ class AudioProcessor:
 
         logger.info("AudioProcessor configurado correctamente")
 
+    def extract_audio(self, video_path):
+        """
+        Extrae audio en formato WAV mono 16k para acelerar Whisper
+        """
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_audio:
+            command = [
+                "ffmpeg",
+                "-i",
+                video_path,
+                "-vn",
+                "-acodec",
+                "pcm_s16le",
+                "-ar",
+                "16000",
+                "-ac",
+                "1",
+                "-y",
+                temp_audio.name,
+            ]
+
+            subprocess.run(command, check=True)
+
+            return temp_audio.name
+
     def transcribe_video(self, video_path):
         """
         Transcribe directamente el video y devuelve segmentos con timestamps
@@ -42,9 +68,16 @@ class AudioProcessor:
         logger.info("Transcribiendo video con Whisper")
         logger.info(f"✅ Paso 1")
 
-        result = self.whisper_model.transcribe(
-            video_path, task="transcribe", verbose=False
-        )
+        # Whisper ya no decodifica video. Solo procesa WAV mono 16k.
+        audio_path = self.extract_audio(video_path)
+
+        try:
+            result = self.whisper_model.transcribe(
+                audio_path, task="transcribe", verbose=False, fp16=False
+            )
+        finally:
+            if os.path.exists(audio_path):
+                os.unlink(audio_path)
 
         segments = result.get("segments", [])
 
@@ -125,14 +158,20 @@ Y solo debes devolver lo que te pido nada mas, ningun punto extra ni un entendid
 
     def process_video(self, video_path):
         """
-        Pipeline completo
+        Devuelve segmentos listos.
+        Si no hay suficientes segmentos, devuelve None
+        y el fallback lo maneja services.py
         """
 
         try:
             segments = self.transcribe_video(video_path)
-            clips = self.analyze_segments_with_gemini(segments)
-            return clips
+
+            if len(segments) < 5:
+                logger.warning("⚠️ Muy pocos segmentos detectados")
+                return None
+
+            return self.analyze_segments_with_gemini(segments)
 
         except Exception as e:
             logger.error(f"Error procesando video: {str(e)}")
-            raise
+            return None
