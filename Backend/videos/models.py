@@ -14,6 +14,9 @@ class Video(models.Model):
         PROCESSING = "processing", "Processing"
         READY = "ready", "Ready"
         FAILED = "failed", "Failed"
+    class TypeShort(models.TextChoices):
+        VERTICAL = "vertical", "Vertical"
+        HORIZONTAL = "horizontal", "Horizontal"
 
     file_name = models.CharField(max_length=255)
 
@@ -46,6 +49,8 @@ class Video(models.Model):
     height = models.IntegerField(null=True, blank=True)
     aspect_ratio = models.CharField(max_length=10, null=True, blank=True)
     file_size = models.PositiveIntegerField(null=True, blank=True)
+    # vertical o horizontal
+    type_short = models.CharField(max_length=20, null=True, blank=True, choices=TypeShort.choices)
 
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
@@ -55,6 +60,7 @@ class Video(models.Model):
         related_name="videos",
         db_index=True,  # mejora queries por usuario
     )
+    
 
     class Meta:
         ordering = ["-created_at"]

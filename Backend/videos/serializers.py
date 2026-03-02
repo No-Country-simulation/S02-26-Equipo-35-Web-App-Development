@@ -44,6 +44,7 @@ class VideoUploadSerializer(serializers.ModelSerializer):
             "aspect_ratio",
             "file_size",
             "status",
+            "type_short",
             "created_at",
         ]
         read_only_fields = [
@@ -110,6 +111,7 @@ class VideoResponseSerializer(serializers.ModelSerializer):
             "aspect_ratio",
             "file_size",
             "status",
+            "type_short",
             "created_at",
         ]
         read_only_fields = fields

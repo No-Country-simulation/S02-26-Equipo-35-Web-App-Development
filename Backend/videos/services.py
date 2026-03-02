@@ -171,7 +171,7 @@ def get_video_metadata(video_path):
 # CELERY TASK
 # =========================================================
 @shared_task
-def process_video_task(video_id, temp_video_path, file_name):
+def process_video_task(video_id, temp_video_path, file_name, type_short):
     video = None
     job = None
     cover_original_path = None
@@ -183,6 +183,7 @@ def process_video_task(video_id, temp_video_path, file_name):
         # -----------------------
         video = Video.objects.get(id=video_id)
         video.status = "processing"
+        video.type_short = type_short 
         video.save()
 
         job = ProcessingJob.objects.create(
@@ -202,6 +203,7 @@ def process_video_task(video_id, temp_video_path, file_name):
         video.aspect_ratio = metadata["aspect_ratio"]
         video.duration_seconds = metadata["duration"]
         video.file_size = os.path.getsize(temp_video_path)
+        # video.short_vertical = metadata["height"] > metadata["width"]
         video.save()
 
         job.progress = 25

@@ -54,28 +54,47 @@ class VideoViewSet(viewsets.ModelViewSet):
     # ==============================
 
     @swagger_auto_schema(
-        request_body=VideoUploadSerializer,
+        manual_parameters=[
+            openapi.Parameter(
+                "file_name",
+                openapi.IN_FORM,
+                description="Nombre del archivo (opcional)",
+                type=openapi.TYPE_STRING,
+            ),
+            openapi.Parameter(
+                "type_short",
+                openapi.IN_FORM,
+                description="Tipo de short: vertical u horizontal",
+                type=openapi.TYPE_STRING,
+                enum=["vertical", "horizontal"],
+                required=True,
+            ),
+        ],
+        operation_description="Sube un video y dispara procesamiento asíncrono",
+        operation_summary="Subir video y comenzar procesamiento",
         responses={
             202: openapi.Response(
                 description="Video recibido. Procesamiento iniciado.",
                 schema=VideoResponseSerializer(),
             )
         },
-        operation_summary="Subir video y comenzar procesamiento",
-        operation_description="Sube un video y dispara procesamiento asíncrono",
     )
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        type_short = serializer.validated_data.get("type_short")
+
         video = self._create_video_instance(
             user=request.user,
             validated_data=serializer.validated_data,
+            type_short=type_short,  # Pass type_short to the helper method
         )
 
         temp_path = self._save_temp_file(serializer.validated_data["video_file"])
 
-        process_video_task.delay(video.id, temp_path, video.file_name)
+        # Pass type_short to process_video_task
+        process_video_task.delay(video.id, temp_path, video.file_name, type_short)
 
         return Response(
             self._build_create_response(video), status=status.HTTP_202_ACCEPTED
@@ -157,10 +176,13 @@ class VideoViewSet(viewsets.ModelViewSet):
     # HELPERS
     # ==============================
 
-    def _create_video_instance(self, user, validated_data):
+    def _create_video_instance(self, user, validated_data, type_short):
         file_name = validated_data.get("file_name") or validated_data["video_file"].name
         return Video.objects.create(
-            user=user, file_name=file_name, status=Video.Status.UPLOADED
+            user=user,
+            file_name=file_name,
+            status=Video.Status.UPLOADED,
+            type_short=type_short,  # Set type_short when creating the video instance
         )
 
     def _save_temp_file(self, video_file):
