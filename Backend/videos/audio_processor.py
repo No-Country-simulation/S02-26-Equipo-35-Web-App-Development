@@ -72,9 +72,11 @@ class AudioProcessor:
         audio_path = self.extract_audio(video_path)
 
         try:
+            logger.info("🚀 Iniciando Whisper")
             result = self.whisper_model.transcribe(
                 audio_path, task="transcribe", verbose=False, fp16=False
             )
+            logger.info("🚀 Whisper terminó")
         finally:
             if os.path.exists(audio_path):
                 os.unlink(audio_path)

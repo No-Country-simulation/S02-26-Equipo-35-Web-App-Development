@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.10-slim
 
 # Evita archivos .pyc
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -16,6 +16,10 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 
 RUN pip install --upgrade pip
+
+# 🔥 Instalar Torch CPU desde índice oficial (NO PyPI normal)
+RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
+
 RUN pip install -r requirements.txt
 
 # Copiar el resto del proyecto
