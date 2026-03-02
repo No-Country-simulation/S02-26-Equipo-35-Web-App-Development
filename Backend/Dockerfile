@@ -17,9 +17,6 @@ COPY requirements.txt .
 
 RUN pip install --upgrade pip
 
-# 🔥 Instalar Torch CPU desde índice oficial (NO PyPI normal)
-RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
-
 RUN pip install -r requirements.txt
 
 # Copiar el resto del proyecto

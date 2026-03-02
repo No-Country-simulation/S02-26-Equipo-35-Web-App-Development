@@ -29,7 +29,7 @@ def generate_fallback_clips(duration):
     return [
         {"start": 0, "end": min(30, duration)},
         {"start": duration * 0.3, "end": duration * 0.6},
-        {"start": duration * 0.6, "end": max(duration - 1, duration * 0.6)},
+        {"start": duration * 0.6, "end": duration},
     ]
 
 
@@ -42,6 +42,7 @@ def run_ffmpeg(command):
             command,
             check=True,
             text=True,
+            capture_output=True,
         )
     except subprocess.CalledProcessError as e:
         logger.error("FFmpeg failed:\n%s", e.stderr)
@@ -88,6 +89,7 @@ def generate_shorts(video_path, video, clips_data):
     🔥 cover generado desde el short ya procesado
     """
     shorts_data = []
+    MIN_CLIP_DURATION = 8  # segundos mínimos
 
     segments = []
 
@@ -95,7 +97,7 @@ def generate_shorts(video_path, video, clips_data):
         start = float(clip.get("start", 0))
         end = float(clip.get("end", 0))
 
-        if end > start and end - start > 3:
+        if end > start and (end - start) >= MIN_CLIP_DURATION:
             segments.append((start, end))
 
     for start, end in segments:
@@ -246,8 +248,12 @@ def process_video_task(video_id, temp_video_path, file_name):
         duration = metadata["duration"]
 
         if metadata["has_audio"]:
-            audio_processor = AudioProcessor()
-            clips_data = audio_processor.process_video(temp_video_path)
+            try:
+                audio_processor = AudioProcessor()
+                clips_data = audio_processor.process_video(temp_video_path)
+            except Exception as e:
+                logger.warning(f"AudioProcessor no disponible: {str(e)}")
+                clips_data = None
 
             if (
                 not clips_data
@@ -260,6 +266,63 @@ def process_video_task(video_id, temp_video_path, file_name):
         else:
             logger.warning("⚠️ El video no tiene audio. Generando shorts automáticos.")
             clips_data = generate_fallback_clips(duration)
+
+        # -----------------------
+        # VALIDAR CLIPS CONTRA DURACIÓN REAL
+        # -----------------------
+        duration = metadata["duration"]
+
+        validated_clips = []
+
+        for clip in clips_data:
+            start = max(0, float(clip.get("start", 0)))
+            end = min(duration, float(clip.get("end", 0)))
+
+            if end > start:
+                validated_clips.append(
+                    {
+                        "start": start,
+                        "end": end,
+                    }
+                )
+
+        clips_data = validated_clips
+
+        # -----------------------
+        # FILTRAR POR DURACIÓN MÍNIMA Y LIMITAR CANTIDAD
+        # -----------------------
+
+        # Regla dinámica según duración del video
+        if duration < 40:
+            MAX_SHORTS = 1
+        elif duration < 90:
+            MAX_SHORTS = 2
+        else:
+            MAX_SHORTS = 3
+
+        MIN_CLIP_DURATION = 8  # segundos mínimos
+
+        filtered_clips = []
+
+        for clip in clips_data:
+            start = clip["start"]
+            end = clip["end"]
+
+            if end - start >= MIN_CLIP_DURATION:
+                filtered_clips.append(clip)
+
+        # Limitar a máximo permitido
+        clips_data = filtered_clips[:MAX_SHORTS]
+
+        # Si no quedaron clips válidos, usar fallback
+        if len(clips_data) == 0:
+            logger.warning("⚠️ No quedaron clips válidos. Usando fallback.")
+            clips_data = generate_fallback_clips(duration)
+
+            # 🔥 volver a aplicar duración mínima y límite
+            clips_data = [
+                c for c in clips_data if (c["end"] - c["start"]) >= MIN_CLIP_DURATION
+            ][:MAX_SHORTS]
 
         logger.info(f"📊 Clips encontrados: {clips_data}")
 
@@ -309,7 +372,26 @@ def process_video_task(video_id, temp_video_path, file_name):
         video.cover_original_cloudinary_public_id = cover_original_upload["public_id"]
         video.save()
 
-        # Subir shorts
+        # -----------------------
+        # Subir shorts (IDEMPOTENTE)
+        # -----------------------
+
+        # 🔥 BORRAR shorts anteriores si existen
+        old_shorts = list(video.shorts.all())
+
+        for short in old_shorts:
+            if short.cloudinary_public_id:
+                cloudinary.uploader.destroy(
+                    short.cloudinary_public_id,
+                    resource_type="video",
+                )
+            if short.cover_cloudinary_public_id:
+                cloudinary.uploader.destroy(
+                    short.cover_cloudinary_public_id,
+                    resource_type="image",
+                )
+            short.delete()
+
         for i, short_info in enumerate(shorts_local_data, 1):
 
             short_upload = cloudinary.uploader.upload(
@@ -337,26 +419,12 @@ def process_video_task(video_id, temp_video_path, file_name):
                 status="ready",
             )
 
-        # -----------------------
-        # CLEAN TEMP FILES
-        # -----------------------
-        logger.info(f"||||||||||||||||||Borrando-Video|||||||||||")
-
-        if cover_original_path and os.path.exists(cover_original_path):
-            os.unlink(cover_original_path)
-
-        for short in shorts_local_data:
-            if os.path.exists(short["short_path"]):
-                os.unlink(short["short_path"])
-            if os.path.exists(short["cover_path"]):
-                os.unlink(short["cover_path"])
-
         logger.warning(f"TOTAL SHORTS EN DB: {video.shorts.count()}")
         # -----------------------
         # FINALIZAR
         # -----------------------
         video.status = "ready"
-        video.generated_shorts_count = 3
+        video.generated_shorts_count = video.shorts.count()
         video.save()
 
         job.status = "completed"
@@ -380,8 +448,20 @@ def process_video_task(video_id, temp_video_path, file_name):
             job.save()
 
     finally:
+
+        logger.info(f"||||||||||||||||||Borrando-Video|||||||||||")
+
         if os.path.exists(temp_video_path):
             os.unlink(temp_video_path)
+
+        if cover_original_path and os.path.exists(cover_original_path):
+            os.unlink(cover_original_path)
+
+        for short in shorts_local_data:
+            if os.path.exists(short.get("short_path", "")):
+                os.unlink(short["short_path"])
+            if os.path.exists(short.get("cover_path", "")):
+                os.unlink(short["cover_path"])
 
 
 # =========================================================

@@ -1,42 +1,41 @@
-import whisper
-from google import genai
 import os
 import logging
 import json
 import tempfile
 import subprocess
+import requests
+from google import genai
 
 logger = logging.getLogger(__name__)
 
 
-whisper_model = whisper.load_model("base")
-
-
 class AudioProcessor:
     """
-    Pipeline profesional de análisis de video:
-    1. Transcribe directamente desde el video con Whisper
-    2. Usa timestamps reales de segmentos
-    3. Analiza con Gemini para detectar clips relevantes
+    Pipeline nuevo:
+    1️⃣ Extrae audio WAV mono 16k
+    2️⃣ Envía audio a SpeechFlow API
+    3️⃣ Recibe texto con timestamps
+    4️⃣ Analiza con Gemini
     """
 
     def __init__(self):
+        self.gemini_api_key = os.getenv("API_KEY_GEMINI")
+        self.speechflow_api_key = os.getenv("SPEECHFLOW_API_KEY")
 
-        self.api_key = os.getenv("API_KEY_GEMINI")
-
-        if not self.api_key:
+        if not self.gemini_api_key:
             raise ValueError("API_KEY_GEMINI no configurada")
 
-        self.client = genai.Client(api_key=self.api_key)
+        if not self.speechflow_api_key:
+            raise ValueError("SPEECHFLOW_API_KEY no configurada")
 
-        self.whisper_model = whisper_model
+        self.client = genai.Client(api_key=self.gemini_api_key)
 
-        logger.info("AudioProcessor configurado correctamente")
+        logger.info("AudioProcessor configurado con SpeechFlow")
 
+    # =========================================================
+    # EXTRAER AUDIO
+    # =========================================================
     def extract_audio(self, video_path):
-        """
-        Extrae audio en formato WAV mono 16k para acelerar Whisper
-        """
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_audio:
             command = [
                 "ffmpeg",
@@ -53,59 +52,63 @@ class AudioProcessor:
                 temp_audio.name,
             ]
 
-            subprocess.run(command, check=True)
-
+            subprocess.run(command, check=True, capture_output=True)
             return temp_audio.name
 
-    def transcribe_video(self, video_path):
-        """
-        Transcribe directamente el video y devuelve segmentos con timestamps
-        """
+    # =========================================================
+    # TRANSCRIPCIÓN CON SPEECHFLOW
+    # =========================================================
+    def transcribe_with_speechflow(self, audio_path):
 
-        if not os.path.exists(video_path):
-            raise FileNotFoundError(f"Video no encontrado: {video_path}")
+        url = "https://api.speechflow.io/asr/file/v1"
 
-        logger.info("Transcribiendo video con Whisper")
-        logger.info(f"✅ Paso 1")
+        headers = {
+            "Authorization": f"Bearer {self.speechflow_api_key}",
+        }
 
-        # Whisper ya no decodifica video. Solo procesa WAV mono 16k.
-        audio_path = self.extract_audio(video_path)
+        data = {
+            "lang": "es",
+        }
 
-        try:
-            logger.info("🚀 Iniciando Whisper")
-            result = self.whisper_model.transcribe(
-                audio_path, task="transcribe", verbose=False, fp16=False
+        with open(audio_path, "rb") as f:
+            response = requests.post(
+                url,
+                headers=headers,
+                files={"file": f},
+                data=data,
+                timeout=120,
             )
-            logger.info("🚀 Whisper terminó")
-        finally:
-            if os.path.exists(audio_path):
-                os.unlink(audio_path)
 
-        segments = result.get("segments", [])
+        if response.status_code != 200:
+            logger.error(f"SpeechFlow error: {response.text}")
+            raise Exception("Error en SpeechFlow API")
+
+        result = response.json()
+
+        segments = []
+
+        raw_segments = result.get("segments") or result.get("result", {}).get(
+            "segments", []
+        )
+
+        for item in raw_segments:
+            segments.append(
+                {
+                    "start": round(item["start"], 2),
+                    "end": round(item["end"], 2),
+                    "text": item["text"].strip(),
+                }
+            )
 
         if not segments:
-            raise ValueError("No se detectó audio o texto en el video")
-        logger.info(f"✅ Paso 2")
-        formatted_segments = [
-            {
-                "start": round(seg["start"], 2),
-                "end": round(seg["end"], 2),
-                "text": seg["text"].strip(),
-            }
-            for seg in segments
-            if seg["text"].strip()
-        ]
+            raise ValueError("SpeechFlow no devolvió segmentos")
 
-        logger.info(f"Transcripción completada con {len(formatted_segments)} segmentos")
-        logger.info(f"✅ Paso 3")
-        return formatted_segments
+        return segments
 
+    # =========================================================
+    # ANALISIS GEMINI
+    # =========================================================
     def analyze_segments_with_gemini(self, segments):
-        """
-        Usa Gemini para identificar clips interesantes usando timestamps reales
-        """
-
-        logger.info("Analizando segmentos con Gemini")
 
         segments_text = "\n".join(
             f"[{s['start']} - {s['end']}] {s['text']}" for s in segments
@@ -113,26 +116,18 @@ class AudioProcessor:
 
         prompt = f"""
 Analiza los siguientes segmentos de un video con marcas de tiempo.
-Selecciona los fragmentos más interesantes para crear clips cortos virales.
-Devuelve SOLO 3 JSON válido en este formato:
+Selecciona los 3 fragmentos más interesantes para crear clips virales.
+Devuelve SOLO JSON válido:
 
 [
   {{
     "start": 12.5,
-    "end": 35.2,
-    "reason": "explicación breve"
+    "end": 35.2
   }}
 ]
 
-Si no hay clips relevantes, devuelve:
-
-{{ "error": "No se encontraron clips relevantes" }}
-
 Segmentos:
-
 {segments_text}
-
-Y solo debes devolver lo que te pido nada mas, ningun punto extra ni un entendido.
 """
 
         response = self.client.models.generate_content(
@@ -140,36 +135,32 @@ Y solo debes devolver lo que te pido nada mas, ningun punto extra ni un entendid
             contents=prompt,
         )
 
-        response_text = response.text.strip()
+        text = response.text.strip()
+
+        text = text.replace("```json", "").replace("```", "").strip()
 
         try:
-            response_text = (
-                response_text.strip()
-                .removeprefix("```json")
-                .removesuffix("```")
-                .strip()
-            )
-            # print("=====================================================")
-            # print(response_text)
-            # print("=====================================================")
-            clips = json.loads(response_text)
-            return clips
+            return json.loads(text)
         except json.JSONDecodeError:
             logger.error("Gemini devolvió JSON inválido")
-            return {"error": "Respuesta inválida de Gemini", "raw": response_text}
+            return None
 
+    # =========================================================
+    # PROCESO COMPLETO
+    # =========================================================
     def process_video(self, video_path):
-        """
-        Devuelve segmentos listos.
-        Si no hay suficientes segmentos, devuelve None
-        y el fallback lo maneja services.py
-        """
 
         try:
-            segments = self.transcribe_video(video_path)
+            audio_path = self.extract_audio(video_path)
+
+            try:
+                segments = self.transcribe_with_speechflow(audio_path)
+            finally:
+                if os.path.exists(audio_path):
+                    os.unlink(audio_path)
 
             if len(segments) < 5:
-                logger.warning("⚠️ Muy pocos segmentos detectados")
+                logger.warning("Muy pocos segmentos detectados")
                 return None
 
             return self.analyze_segments_with_gemini(segments)
