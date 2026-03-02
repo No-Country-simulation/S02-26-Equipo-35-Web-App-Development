@@ -87,33 +87,56 @@ def generate_shorts(video_path, video, clips_data):
 
         with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_short:
             try:
-                # Generar short
-                run_ffmpeg(
-                    [
-                        "ffmpeg",
-                        "-ss",
-                        str(start),
-                        "-to",
-                        str(end),
-                        "-i",
-                        video_path,
-                        "-vf",
-                        "crop=ih*9/16:ih,scale=720:1280",
-                        "-c:v",
-                        "libx264",
-                        "-preset",
-                        "veryfast",
-                        "-crf",
-                        "23",
-                        "-c:a",
-                        "aac",
-                        "-b:a",
-                        "128k",
-                        "-y",
-                        temp_short.name,
-                    ]
-                )
-
+                if(video.type_short == "horizontal"):
+                    run_ffmpeg(
+                        [
+                            "ffmpeg",
+                            "-ss",
+                            str(start),
+                            "-to",
+                            str(end),
+                            "-i",
+                            video_path,
+                            "-c:v",
+                            "libx264",
+                            "-preset",
+                            "veryfast",
+                            "-crf",
+                            "23",
+                            "-c:a",
+                            "aac",
+                            "-b:a",
+                            "128k",
+                            "-y",
+                            temp_short.name,
+                        ]
+                    )
+                else:
+                    run_ffmpeg(
+                        [
+                            "ffmpeg",
+                            "-ss",
+                            str(start),
+                            "-to",
+                            str(end),
+                            "-i",
+                            video_path,
+                            "-vf",
+                            "scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2",
+                            "-c:v",
+                            "libx264",
+                            "-preset",
+                            "veryfast",
+                            "-crf",
+                            "23",
+                            "-c:a",
+                            "aac",
+                            "-b:a",
+                            "128k",
+                            "-y",
+                            temp_short.name,
+                        ]
+                    )
                 # Generar cover reutilizando función
                 cover_path = generate_cover_from_video(temp_short.name, 1)
 
