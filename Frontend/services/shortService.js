@@ -28,6 +28,7 @@ export const getShortsByVideo = async (videoId, page = 1) => {
   return data.shorts ?? [];
 };
 
+//Obtiene shorts del usuario
 export const getShorts = async (page = 1) => {
   const token = getAuthToken();
 
@@ -48,8 +49,7 @@ export const getShorts = async (page = 1) => {
     throw new Error(await response.text());
   }
 
-  const data = await response.json();
-  return data.results ?? [];
+  return response.json(); // devuelve todo de shorts
 };
 
 export const deleteShort = async (id) => {

@@ -2,12 +2,14 @@ import { useState, useRef } from "react";
 import { updateProfileImage, deleteProfileImage } from "../services/userService";
 import { toast } from "react-toastify";
 import 'react-toastify/ReactToastify.css';
+import { useAuth } from "../contexts/AuthContext";
 
-export const ProfileAvatar = ({ profile, setProfile, token }) => {
+export const ProfileAvatar = ({ token }) => {
     
     const [hovering, setHovering] = useState(false);
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef(null);
+    const { user, setUser } = useAuth();
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
@@ -32,7 +34,7 @@ export const ProfileAvatar = ({ profile, setProfile, token }) => {
 
           const response = await updateProfileImage(token, file);
 
-          setProfile((prev) => ({
+          setUser((prev) => ({
             ...prev,
             profile_image: response.profile_image,
           }));
@@ -51,7 +53,7 @@ export const ProfileAvatar = ({ profile, setProfile, token }) => {
         try {
           await deleteProfileImage(token);
 
-          setProfile((prev) => ({
+          setUser((prev) => ({
             ...prev,
             profile_image: null,
           }));
@@ -83,9 +85,9 @@ export const ProfileAvatar = ({ profile, setProfile, token }) => {
                     <div className="d-flex align-items-center justify-content-center w-100 h-100">
                       <div className="spinner-border text-light" role="status" />
                     </div>
-                ) : profile.profile_image ? (
+                ) : user?.profile_image ? (
                   <img
-                    src={profile.profile_image}
+                    src={user?.profile_image}
                     alt="profile"
                     style={{
                       width: "100%",
@@ -94,11 +96,11 @@ export const ProfileAvatar = ({ profile, setProfile, token }) => {
                     }}
                   />
                 ) : (
-                  profile.username?.charAt(0).toUpperCase()
+                  user?.username?.charAt(0).toUpperCase()
                 )}
             </div>
 
-            {profile.profile_image && hovering && (
+            {user?.profile_image && hovering && (
                 <div
                   className="position-absolute top-0 end-0 bg-danger text-white rounded-circle d-flex align-items-center justify-content-center shadow"
                   style={{

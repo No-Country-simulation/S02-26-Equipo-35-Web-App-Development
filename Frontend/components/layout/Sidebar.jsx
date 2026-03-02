@@ -88,10 +88,22 @@ export const Sidebar = ({ language, setLanguage, theme, toggleTheme, t }) => {
             className='btn w-100 d-flex align-items-center border rounded-4 px-2 py-3'
           >
             <div
-              className='rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0'
+              className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center overflow-hidden flex-shrink-0"
               style={{ width: "36px", height: "36px" }}
             >
-              {user?.username?.charAt(0).toUpperCase()}
+              {user?.profile_image ? (
+                <img
+                  src={user.profile_image}
+                  alt="profile"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                user?.username?.charAt(0).toUpperCase()
+              )}
             </div>
 
             <div className='ms-3 text-start'>
