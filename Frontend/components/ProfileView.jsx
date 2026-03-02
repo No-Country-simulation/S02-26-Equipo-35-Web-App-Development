@@ -4,9 +4,11 @@ import { Button } from "./Button";
 import { useApp } from "../contexts/AppContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { getProfile } from "../services/userService";
+import { getProfile, updateProfile } from "../services/userService";
 import { ProfileAvatar } from "./ProfileAvatar";
-
+import { getShorts } from "../services/shortService";
+import { toast } from "react-toastify";
+import 'react-toastify/ReactToastify.css';
 
 export const ProfileView = () => {
   const { t, theme, toggleTheme, language, setLanguage } = useApp();
@@ -14,14 +16,24 @@ export const ProfileView = () => {
   const { logout, token } = useAuth();
   const navigate = useNavigate();
 
-  const [profile, setProfile] = useState(null);
+  const { user, setUser } = useAuth();
   const [loading, setLoading] = useState(true);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [nameData, setNameData] = useState({
+    first_name: "",
+    last_name: "",
+  });
+
+  const [shortsCount, setShortsCount] = useState(0);
+  const [usedMinutes, setUsedMinutes] = useState(0);
+  const percentage = (usedMinutes / 1000) * 100;
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const data = await getProfile(token);
-        setProfile(data);
+        setUser(data);
       } catch (error) {
         console.error("Error fetching profile: ", error);
       } finally {
@@ -35,13 +47,61 @@ export const ProfileView = () => {
     }
   }, [token]);
 
+  useEffect(() => {
+    if (user) {
+      setNameData({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+      });
+    }
+  }, [user]);
+
+  
+  useEffect(() => {
+    const fetchShortsData = async () => {
+      try {
+        const data = await getShorts();
+        // count
+        setShortsCount(data.count);
+        // minutes
+        const totalSeconds = data.results
+          .filter((s) => s.status === "ready")
+          .reduce(
+            (acc, s) => acc + Number(s.duration_seconds),
+            0
+          );
+
+        setUsedMinutes(Number((totalSeconds / 60).toFixed(2)));
+
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchShortsData();
+  }, []);
+  
+
+  const handleSaveProfile = async () => {
+   try {
+    const updatedUser = await updateProfile(token, nameData);
+
+    setUser(updatedUser);
+    setIsEditing(false);
+    toast.success('Nombre y/o apellido actualizados correctamente');
+
+  } catch (error) {
+    console.error(error);
+  }
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate("/login");
   };
 
   if (loading) return <div className="text-center py-5">Loading...</div>;
-  if (!profile) return <div className="text-center py-5">No profile data</div>
+  if (!user) return <div className="text-center py-5">No profile data</div>
 
   return (
     <div className='container py-4 animate-fade-in'>
@@ -52,8 +112,8 @@ export const ProfileView = () => {
             <div className='col-auto mb-4 mb-md-0'>
               <div className="position-relative">
                 <ProfileAvatar
-                  profile={profile}
-                  setProfile={setProfile}
+                  profile={user}
+                  setProfile={setUser}
                   token={token}
                 />
 
@@ -65,8 +125,33 @@ export const ProfileView = () => {
             </div>
 
             <div className='col text-center text-md-start mb-4 mb-md-0 ps-md-4'>
-              <h1 className='h2 fw-bold text-base mb-1'>{profile.username}</h1>
-              <p className='text-muted mb-3 opacity-75'>{profile.email}</p>
+              <h1 className='h2 fw-bold text-base mb-1'>{user.username}</h1>
+              {isEditing ? (
+                <div className="d-flex gap-2">
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={nameData.first_name}
+                    onChange={(e) =>
+                      setNameData({ ...nameData, first_name: e.target.value })
+                    }
+                  />
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={nameData.last_name}
+                    onChange={(e) =>
+                      setNameData({ ...nameData, last_name: e.target.value })
+                    }
+                  />
+                </div>
+              ) : (
+                <h1 className="h2 fw-bold text-base mb-1">
+                  {user.first_name} {user.last_name}
+                </h1>
+              )}
+
+              <p className='text-muted mb-3 opacity-75'>{user.email}</p>
               <div className='d-flex flex-wrap justify-content-center justify-content-md-start gap-2'>
                 <span
                   className='badge rounded-pill bg-primary bg-opacity-10 text-primary px-3 py-2 text-uppercase fw-bold'
@@ -82,8 +167,8 @@ export const ProfileView = () => {
                   style={{ fontSize: "0.65rem" }}
                 >
                   Miembro desde{" "}
-                  {profile?.created_at &&
-                    new Date(profile.created_at).toLocaleDateString("es-AR")}
+                  {user?.created_at &&
+                    new Date(user.created_at).toLocaleDateString("es-AR")}
                 </span>
               </div>
             </div>
@@ -94,10 +179,28 @@ export const ProfileView = () => {
                 size='md'
                 className='rounded-pill px-4'
                 icon={<User className='w-4 h-4' />}
-                onClick={() => handleAction("Edit Profile")}
+                onClick={() => setIsEditing(true)}
               >
                 Edit Profile
               </Button>
+
+              {isEditing && (
+                <div className="mt-3 d-flex gap-2">
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleSaveProfile}
+                  >
+                    Save
+                  </button>
+                  <button
+                    className="btn btn-outline-secondary"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}       
+
             </div>
           </div>
         </div>
@@ -141,7 +244,7 @@ export const ProfileView = () => {
               <div className='pt-2'>
                 <div className='d-flex justify-content-between small mb-3 text-white text-opacity-75 fw-bold'>
                   <span className='tracking-tight'>{t("profile.mins")}</span>
-                  <span className='font-monospace'>450 / 1000 Mins</span>
+                  <span className='font-monospace'>{ usedMinutes }  / 1000 Mins</span>
                 </div>
                 <div
                   className='progress bg-white bg-opacity-10 rounded-pill shadow-inner overflow-hidden'
@@ -151,7 +254,7 @@ export const ProfileView = () => {
                     className='progress-bar bg-primary bg-gradient rounded-pill shadow-sm transition-all'
                     role='progressbar'
                     style={{
-                      width: "45%",
+                      width: percentage ,
                       transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
                     }}
                     aria-valuenow={45}
@@ -175,7 +278,7 @@ export const ProfileView = () => {
                 className='h1 fw-bold text-base mb-0 tracking-tight'
                 style={{ fontSize: "3.5rem" }}
               >
-                124
+               {shortsCount} 
               </div>
               <div className='text-muted small fw-bold text-uppercase tracking-widest mt-1'>
                 {t("profile.videos")}

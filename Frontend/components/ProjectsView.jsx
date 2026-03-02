@@ -26,9 +26,9 @@ export const ProjectsView = ({ projects }) => {
   // Traigo los datos del shortServices
   useEffect(() => {
     const fetchData = async () => {
-      const shorts = await getShorts();
-      console.log('Shorts:', shorts);
-      setRecentShorts(shorts);
+      const data = await getShorts();
+      setRecentShorts(data.results);
+      console.log('Shorts:', data.results);
     };
 
     fetchData();

@@ -53,3 +53,36 @@ export const deleteProfileImage = async (token) => {
 
   return await response.json();
 };
+
+export const updateProfile = async (token, data) => {
+  const formData = new FormData();
+
+  formData.append("first_name", data.first_name);
+  formData.append("last_name", data.last_name);
+
+  const response = await fetch(`${API_URL}/auth/profile/`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Token ${token}`,
+    },
+    body: formData,
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    console.log("Backend error:", result);
+    throw new Error("Error updating profile");
+  }
+
+  return result;
+};
+
+
+
+
+
+
+
+
+
