@@ -11,7 +11,7 @@ from django.db import transaction
 
 from .models import Video, ProcessingJob
 from shorts.models import Short
-from .audio_processor import AudioProcessor
+
 
 logger = logging.getLogger(__name__)
 
@@ -289,32 +289,18 @@ def process_video_task(video_id, temp_video_path, file_name):
         job.save()
 
         # -----------------------
-        # 2.5 Procesar audio para usar el modelo gemini
+        # GENERACIÓN SIMPLE (SIN IA)
         # -----------------------
 
         duration = metadata["duration"]
+
         if duration <= 0:
             raise ValueError("Video duration inválida o 0")
 
-        if metadata["has_audio"]:
-            try:
-                audio_processor = AudioProcessor()
-                clips_data = audio_processor.process_video(temp_video_path)
-            except Exception as e:
-                logger.warning(f"AudioProcessor no disponible: {str(e)}")
-                clips_data = None
+        clips_data = generate_fallback_clips(duration)
 
-            if (
-                not clips_data
-                or not isinstance(clips_data, list)
-                or len(clips_data) == 0
-            ):
-                logger.warning("⚠️ Gemini inválido o vacío. Usando fallback.")
-                clips_data = generate_fallback_clips(duration)
-
-        else:
-            logger.warning("⚠️ El video no tiene audio. Generando shorts automáticos.")
-            clips_data = generate_fallback_clips(duration)
+        if not clips_data:
+            raise ValueError("No se pudieron generar clips automáticamente")
 
         # -----------------------
         # VALIDAR CLIPS CONTRA DURACIÓN REAL
