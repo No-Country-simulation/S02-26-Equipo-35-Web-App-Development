@@ -45,6 +45,7 @@ class Video(models.Model):
     width = models.IntegerField(null=True, blank=True)
     height = models.IntegerField(null=True, blank=True)
     aspect_ratio = models.CharField(max_length=10, null=True, blank=True)
+    has_audio = models.BooleanField(null=True, blank=True)
     file_size = models.PositiveIntegerField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
