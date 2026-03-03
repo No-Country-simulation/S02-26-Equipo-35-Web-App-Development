@@ -45,18 +45,20 @@ class AudioProcessor:
     def extract_audio(self, video_path):
         logger.info("🎧 Extrayendo audio del video...")
 
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_audio:
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_audio:
             command = [
                 "ffmpeg",
                 "-i",
                 video_path,
                 "-vn",
                 "-acodec",
-                "pcm_s16le",
+                "libmp3lame",
                 "-ar",
                 "16000",
                 "-ac",
                 "1",
+                "-b:a",
+                "64k",
                 "-y",
                 temp_audio.name,
             ]
@@ -77,10 +79,10 @@ class AudioProcessor:
     # =========================================================
     # ESPERAR RESULTADO SPEECHFLOW
     # =========================================================
-    def wait_for_result(self, task_id, headers, max_attempts=30, interval=3):
+    def wait_for_result(self, task_id, headers, max_attempts=100, interval=3):
         logger.info(f"⏳ Esperando resultado SpeechFlow (task_id={task_id})")
 
-        query_url = f"{self.SPEECHFLOW_QUERY_URL}?taskId={task_id}"
+        query_url = f"{self.SPEECHFLOW_QUERY_URL}?taskId={task_id}&resultType=1"
 
         for attempt in range(1, max_attempts + 1):
             logger.info(f"🔎 Consultando estado... intento {attempt}/{max_attempts}")
@@ -94,50 +96,72 @@ class AudioProcessor:
 
             try:
                 data = response.json()
+                logger.info(f"📥 Code recibido: {data.get('code')}")
             except ValueError:
                 logger.error("Respuesta no es JSON válido")
                 return None
 
-            status = data.get("status")
+            code = int(data.get("code", 0))
 
-            logger.info(f"📊 Estado actual: {status}")
+            logger.info(f"📊 Code actual: {code}")
 
-            if status == "done":
+            # ✅ Transcripción lista
+            if code == 11000:
                 logger.info("✅ Transcripción lista")
                 return data
 
-            if status in ("failed", "error"):
-                raise Exception("SpeechFlow reportó error en procesamiento")
+            # ⏳ Aún procesando
+            elif code == 11001:
+                logger.info("⏳ SpeechFlow aún procesando...")
+                time.sleep(interval)
+                continue
 
-            time.sleep(interval)
+            # ❌ Error real
+            else:
+                logger.error(f"❌ SpeechFlow error: {data}")
+                raise Exception(data.get("msg", "Error desconocido"))
 
         raise TimeoutError("SpeechFlow tardó demasiado en procesar el audio")
 
     # =========================================================
     # TRANSCRIPCIÓN CON SPEECHFLOW
     # =========================================================
-    def transcribe_with_speechflow(self, audio_path):
+    def transcribe_with_speechflow(self, audio_path, lang="es"):
         logger.info("🚀 Enviando audio a SpeechFlow...")
 
         headers = {
             "keyId": self.speechflow_key_id,
             "keySecret": self.speechflow_key_secret,
         }
+        create_url = f"{self.SPEECHFLOW_CREATE_URL}?lang={lang}"
+
+        logger.info(f"📤 Subiendo archivo: {audio_path}")
+        file_size_mb = os.path.getsize(audio_path) / (1024 * 1024)
+        logger.info(f"📦 Tamaño archivo a subir: {file_size_mb:.2f} MB")
 
         with open(audio_path, "rb") as f:
+            files = {"file": f}
+
             response = requests.post(
-                f"{self.SPEECHFLOW_CREATE_URL}?lang=es",
+                create_url,
                 headers=headers,
-                files={"file": f},
-                timeout=120,
+                files=files,
+                timeout=300,  # 👈 timeout simple, no tuple
             )
 
-        if response.status_code != 200:
-            logger.error(f"❌ Error creando tarea: {response.text}")
-            raise Exception("Error en SpeechFlow API")
+        logger.info(f"📥 Status code create: {response.status_code}")
+        logger.info(f"📥 Response create: {response.text}")
 
-        result = response.json()
-        task_id = result.get("taskId")
+        if response.status_code != 200:
+            logger.error(f" ❌ Error creando tarea en SpeechFlow: {response.text}")
+            raise Exception(f"Error HTTP SpeechFlow: {response.status_code}")
+
+        create_result = response.json()
+
+        if create_result.get("code") != 10000:
+            raise Exception(f"SpeechFlow error: {create_result.get('msg')}")
+
+        task_id = create_result.get("taskId")
 
         if not task_id:
             raise ValueError("No se recibió taskId de SpeechFlow")
@@ -149,8 +173,14 @@ class AudioProcessor:
         if not result_data:
             raise ValueError("SpeechFlow no devolvió resultado válido")
 
+        logger.info(f"📦 Resultado completo SpeechFlow: {result_data}")
+
         segments = []
-        raw_segments = result_data.get("segments", [])
+        result_payload = result_data.get("data", {})
+        if "segments" not in result_payload:
+            raise ValueError(f"Estructura inesperada: {result_payload}")
+
+        raw_segments = result_payload.get("segments", [])
 
         for item in raw_segments:
             try:
@@ -164,7 +194,8 @@ class AudioProcessor:
             except Exception as e:
                 logger.error(f"Error parseando segmento: {e}")
 
-        if not segments:
+        if not raw_segments:
+            logger.error(f"⚠️ Respuesta sin segmentos: {result_data}")
             raise ValueError("SpeechFlow no devolvió segmentos")
 
         logger.info(f"✅ {len(segments)} segmentos obtenidos")
@@ -222,19 +253,31 @@ Segmentos:
 
         try:
             audio_path = self.extract_audio(video_path)
-            file_size_mb = os.path.getsize(audio_path) / (1024 * 1024)
-
-            if file_size_mb > 25:
-                logger.warning("⚠️ Audio demasiado grande para SpeechFlow")
-                os.unlink(audio_path)
-                return None
 
             try:
+                file_size_mb = os.path.getsize(audio_path) / (1024 * 1024)
+                MAX_AUDIO_SIZE_MB = 50  # límite recomendado para SpeechFlow
+
+                logger.info(f"📦 Tamaño del audio extraído: {file_size_mb:.2f} MB")
+
+                if file_size_mb > MAX_AUDIO_SIZE_MB:
+                    logger.warning(
+                        f"⚠️ Audio demasiado grande para SpeechFlow: "
+                        f"{file_size_mb:.2f}MB > {MAX_AUDIO_SIZE_MB}MB"
+                    )
+                    return None
+
                 segments = self.transcribe_with_speechflow(audio_path)
+
             finally:
-                if os.path.exists(audio_path):
+                # 🔥 Limpieza SIEMPRE aquí, sin duplicar
+                if audio_path and os.path.exists(audio_path):
                     os.unlink(audio_path)
-                    logger.info("🧹 Archivo temporal eliminado")
+                    logger.info("🗑️ Archivo de audio temporal eliminado")
+
+            if not segments:
+                logger.warning("⚠️ SpeechFlow no devolvió segmentos")
+                return None
 
             if len(segments) < 5:
                 logger.warning("⚠️ Muy pocos segmentos detectados")
