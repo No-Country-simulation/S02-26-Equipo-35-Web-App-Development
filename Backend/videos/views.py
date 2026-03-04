@@ -67,15 +67,16 @@ class VideoViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
+        type_short = serializer.validated_data["type_short"]
         video = self._create_video_instance(
             user=request.user,
             validated_data=serializer.validated_data,
+            type_short=type_short,
         )
 
         temp_path = self._save_temp_file(serializer.validated_data["video_file"])
 
-        process_video_task.delay(video.id, temp_path, video.file_name)
+        process_video_task.delay(video.id, temp_path, video.file_name, type_short)
 
         return Response(
             self._build_create_response(video), status=status.HTTP_202_ACCEPTED
@@ -157,10 +158,14 @@ class VideoViewSet(viewsets.ModelViewSet):
     # HELPERS
     # ==============================
 
-    def _create_video_instance(self, user, validated_data):
+    def _create_video_instance(self, user, validated_data, type_short):
         file_name = validated_data.get("file_name") or validated_data["video_file"].name
+
         return Video.objects.create(
-            user=user, file_name=file_name, status=Video.Status.UPLOADED
+            user=user,
+            file_name=file_name,
+            status=Video.Status.UPLOADED,
+            type_short=type_short,
         )
 
     def _save_temp_file(self, video_file):

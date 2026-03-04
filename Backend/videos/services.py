@@ -12,7 +12,53 @@ from django.db import transaction
 from .models import Video, ProcessingJob
 from shorts.models import Short
 
+
 logger = logging.getLogger(__name__)
+
+
+# =========================================================
+# FALL
+# =========================================================
+def generate_fallback_clips(video_duration):
+    """
+    Genera clips automáticos para cuando no hay Gemini.
+    Reglas:
+    - Cada clip mínimo 8s, máximo 60s
+    - No puede superar la duración del video
+    - Divide el video en hasta 3 clips proporcionales según duración
+    """
+    MIN_DURATION = 8
+    MAX_DURATION = 60
+    clips = []
+
+    if video_duration < MIN_DURATION:
+        return []  # no se crea ningún clip
+    elif video_duration <= MAX_DURATION:
+        # Video muy corto: 1 clip que ocupe todo
+        clips.append({"start": 0, "end": video_duration})
+        return clips
+
+    # Determinar cantidad de clips según duración del video
+    if video_duration <= 40:
+        num_clips = 2
+        points = [0, 0.5, 1.0]
+    else:
+        num_clips = 3
+        points = [0, 0.3, 0.6, 1.0]
+
+    for i in range(num_clips):
+        start = video_duration * points[i]
+        end = video_duration * points[i + 1]
+
+        # Limitar duración máximo 60s
+        if end - start > MAX_DURATION:
+            end = start + MAX_DURATION
+
+        # Limitar duración mínimo 8s, si no se cumple, no creamos clip
+        if end - start >= MIN_DURATION:
+            clips.append({"start": round(start, 3), "end": round(end, 3)})
+
+    return clips
 
 
 # =========================================================
@@ -20,12 +66,7 @@ logger = logging.getLogger(__name__)
 # =========================================================
 def run_ffmpeg(command):
     try:
-        subprocess.run(
-            command,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+        subprocess.run(command, check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
         logger.error("FFmpeg failed:\n%s", e.stderr)
         raise
@@ -61,9 +102,33 @@ def generate_cover_from_video(video_path, second=1):
 
 
 # =========================================================
+# GENERATE FILTER
+# =========================================================
+def build_video_filter(type_short: str) -> str:
+    """
+    Devuelve el filtro FFmpeg según el tipo de short.
+    """
+
+    if type_short == "vertical":
+        # recorte central 9:16
+        return (
+            "crop=trunc(ih*9/16/2)*2:ih:"
+            "(iw-trunc(ih*9/16/2)*2)/2:0,"
+            "scale=720:1280"
+        )
+
+    elif type_short == "horizontal":
+        # letterbox negro: escala ancho 720, altura proporcional, luego pad a 720x1280
+        return "scale=720:-1," "pad=720:1280:(ow-iw)/2:(oh-ih)/2:black"
+
+    else:
+        raise ValueError("Tipo de short inválido")
+
+
+# =========================================================
 # GENERATE SHORTS
 # =========================================================
-def generate_shorts(video_path, video):
+def generate_shorts(video_path, clips_data, type_short="vertical"):
     """
     🔥 1 SOLO FFMPEG POR SHORT
     🔥 720x1280
@@ -71,14 +136,26 @@ def generate_shorts(video_path, video):
     🔥 cover generado desde el short ya procesado
     """
     shorts_data = []
-    total = video.duration_seconds
+    segments = []
 
-    segments = [
-        (0, total * 0.3),
-        (total * 0.35, total * 0.65),
-        (total * 0.7, total - 1),
-    ]
+    video_filter = build_video_filter(type_short)
 
+    # -----------------------------
+    # Normalizar segmentos
+    # -----------------------------
+    for clip in clips_data:
+        try:
+            start = float(clip.get("start", 0))
+            end = float(clip.get("end", 0))
+        except (TypeError, ValueError):
+            continue
+
+        if end > start:  # solo aseguramos start < end
+            segments.append((start, end))
+
+    # -----------------------------
+    # Generar shorts
+    # -----------------------------
     for start, end in segments:
         start = round(start, 3)
         end = round(end, 3)
@@ -86,34 +163,47 @@ def generate_shorts(video_path, video):
         with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_short:
             try:
                 # Generar short
-                run_ffmpeg(
-                    [
-                        "ffmpeg",
-                        "-ss",
-                        str(start),
-                        "-to",
-                        str(end),
-                        "-i",
-                        video_path,
-                        "-vf",
-                        "crop=ih*9/16:ih,scale=720:1280",
-                        "-c:v",
-                        "libx264",
-                        "-preset",
-                        "veryfast",
-                        "-crf",
-                        "23",
-                        "-c:a",
-                        "aac",
-                        "-b:a",
-                        "128k",
-                        "-y",
-                        temp_short.name,
-                    ]
-                )
+                command = [
+                    "ffmpeg",
+                    "-ss",
+                    str(start),
+                    "-i",
+                    video_path,
+                    "-t",
+                    str(end - start),
+                ]
+                # aplicar el filtros según el tipo de short
+                command += ["-vf", video_filter]
 
-                # Generar cover reutilizando función
-                cover_path = generate_cover_from_video(temp_short.name, 1)
+                # Codecs finales
+                command += [
+                    "-c:v",
+                    "libx264",
+                    "-preset",
+                    "veryfast",
+                    "-crf",
+                    "23",
+                    "-c:a",
+                    "aac",
+                    "-b:a",
+                    "128k",
+                    "-movflags",
+                    "+faststart",
+                    "-y",
+                    temp_short.name,
+                ]
+
+                run_ffmpeg(command)
+
+                # -----------------------------
+                # Generar cover
+                # -----------------------------
+                clip_duration = end - start
+                second_for_cover = min(1, clip_duration / 2)
+
+                cover_path = generate_cover_from_video(
+                    temp_short.name, second_for_cover
+                )
 
                 shorts_data.append(
                     {
@@ -149,9 +239,24 @@ def get_video_metadata(video_path):
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    if result.stderr:
+        logger.warning(f"ffprobe stderr: {result.stderr}")
+
     data = json.loads(result.stdout)
 
-    video_stream = next(s for s in data["streams"] if s["codec_type"] == "video")
+    video_stream = next(
+        (s for s in data["streams"] if s["codec_type"] == "video"),
+        None,
+    )
+    if not video_stream:
+        raise ValueError("No video stream found")
+
+    audio_stream = next(
+        (s for s in data["streams"] if s["codec_type"] == "audio"),
+        None,
+    )
+    if not audio_stream:
+        logger.warning("⚠️ No se detectó stream de audio en el video")
 
     width = int(video_stream["width"])
     height = int(video_stream["height"])
@@ -162,6 +267,7 @@ def get_video_metadata(video_path):
         "height": height,
         "aspect_ratio": f"{width // divisor}:{height // divisor}",
         "duration": float(data["format"].get("duration", 0)),
+        "has_audio": audio_stream is not None,
     }
 
 
@@ -169,7 +275,7 @@ def get_video_metadata(video_path):
 # CELERY TASK
 # =========================================================
 @shared_task
-def process_video_task(video_id, temp_video_path, file_name):
+def process_video_task(video_id, temp_video_path, file_name, type_short):
     video = None
     job = None
     cover_original_path = None
@@ -179,14 +285,22 @@ def process_video_task(video_id, temp_video_path, file_name):
         # -----------------------
         # INIT
         # -----------------------
-        video = Video.objects.get(id=video_id)
-        video.status = "processing"
-        video.save()
+        with transaction.atomic():
+            video = Video.objects.select_for_update().get(id=video_id)
+
+            if video.status == Video.Status.PROCESSING:
+                logger.warning(
+                    f"Video {video.id} ya está en processing. Abortando task duplicada."
+                )
+                return
+
+            video.status = Video.Status.PROCESSING
+            video.save()
 
         job = ProcessingJob.objects.create(
             video=video,
-            job_type="shorts_generation",
-            status="running",
+            job_type=ProcessingJob.JobType.SHORTS_GENERATION,
+            status=ProcessingJob.Status.RUNNING,
             started_at=timezone.now(),
             progress=10,
         )
@@ -199,11 +313,68 @@ def process_video_task(video_id, temp_video_path, file_name):
         video.height = metadata["height"]
         video.aspect_ratio = metadata["aspect_ratio"]
         video.duration_seconds = metadata["duration"]
+        video.has_audio = metadata["has_audio"]
         video.file_size = os.path.getsize(temp_video_path)
+
+        # SOLO ORIGINAL: validar horizontal
+        if video.height > video.width:
+            raise ValueError("Solo se permiten videos horizontales (landscape)")
+
         video.save()
 
         job.progress = 25
         job.save()
+
+        # -----------------------
+        # GENERACIÓN SIMPLE (SIN IA)
+        # -----------------------
+
+        duration = metadata["duration"]
+
+        if duration <= 0:
+            raise ValueError("Video duration inválida o 0")
+
+        clips_data = generate_fallback_clips(duration)
+
+        if not clips_data:
+            raise ValueError("No se pudieron generar clips automáticamente")
+
+        # -----------------------
+        # VALIDAR CLIPS CONTRA DURACIÓN REAL
+        # -----------------------
+
+        validated_clips = []
+        for clip in clips_data:
+            start = max(0, float(clip.get("start", 0)))
+            end = min(duration, float(clip.get("end", 0)))
+            if end > start:
+                validated_clips.append({"start": round(start, 3), "end": round(end, 3)})
+        clips_data = validated_clips
+
+        # Si no quedaron clips válidos, usar fallback
+        if len(clips_data) == 0:
+            logger.warning("⚠️ No quedaron clips válidos. Usando fallback.")
+            clips_data = generate_fallback_clips(duration)
+
+        logger.info(f"📊 Clips encontrados: {clips_data}")
+
+        job.progress = 30
+        job.save()
+
+        # -----------------------
+        # NORMALIZAR Y DETECTAR SUPERPOSICIÓN
+        # -----------------------
+
+        # Ordenar por start
+        clips_data = sorted(clips_data, key=lambda x: x["start"])
+
+        # Detectar superposición
+        for i in range(1, len(clips_data)):
+            if clips_data[i]["start"] < clips_data[i - 1]["end"]:
+                logger.warning(
+                    f"Clips superpuestos detectados entre "
+                    f"{clips_data[i - 1]} y {clips_data[i]}"
+                )
 
         # -----------------------
         # GENERAR COVER ORIGINAL
@@ -216,7 +387,9 @@ def process_video_task(video_id, temp_video_path, file_name):
         # -----------------------
         # GENERAR SHORTS LOCAL
         # -----------------------
-        shorts_local_data = generate_shorts(temp_video_path, video)
+        shorts_local_data = generate_shorts(
+            temp_video_path, clips_data, type_short=type_short
+        )
 
         job.progress = 70
         job.save()
@@ -247,8 +420,12 @@ def process_video_task(video_id, temp_video_path, file_name):
         video.cover_original_url = cover_original_upload["secure_url"]
         video.cover_original_cloudinary_public_id = cover_original_upload["public_id"]
         video.save()
+        video.shorts.all().delete()  # limpiar shorts anteriores por si acaso
 
-        # Subir shorts
+        # -----------------------
+        # Subir shorts (IDEMPOTENTE)
+        # ----------------------
+
         for i, short_info in enumerate(shorts_local_data, 1):
 
             short_upload = cloudinary.uploader.upload(
@@ -273,30 +450,18 @@ def process_video_task(video_id, temp_video_path, file_name):
                 cover_cloudinary_public_id=cover_upload["public_id"],
                 start_second=short_info["start"],
                 end_second=short_info["end"],
-                status="ready",
+                status=Short.Status.READY,
             )
 
-        # -----------------------
-        # CLEAN TEMP FILES
-        # -----------------------
-        if cover_original_path and os.path.exists(cover_original_path):
-            os.unlink(cover_original_path)
-
-        for short in shorts_local_data:
-            if os.path.exists(short["short_path"]):
-                os.unlink(short["short_path"])
-            if os.path.exists(short["cover_path"]):
-                os.unlink(short["cover_path"])
-
-        logger.warning(f"TOTAL SHORTS EN DB: {video.shorts.count()}")
+        logger.info(f"TOTAL SHORTS EN DB: {video.shorts.count()}")
         # -----------------------
         # FINALIZAR
         # -----------------------
-        video.status = "ready"
-        video.generated_shorts_count = 3
+        video.status = Video.Status.READY
+        video.generated_shorts_count = video.shorts.count()
         video.save()
 
-        job.status = "completed"
+        job.status = ProcessingJob.Status.COMPLETED
         job.progress = 100
         job.finished_at = timezone.now()
         job.save()
@@ -307,18 +472,30 @@ def process_video_task(video_id, temp_video_path, file_name):
         logger.error(f"❌ Error procesando video {video_id}: {str(e)}")
 
         if video:
-            video.status = "failed"
+            video.status = Video.Status.FAILED
             video.save()
 
         if job:
-            job.status = "failed"
+            job.status = ProcessingJob.Status.FAILED
             job.error_message = str(e)[:300]
             job.finished_at = timezone.now()
             job.save()
 
     finally:
+
+        logger.info(f"||||||||||||||||||Borrando-Video|||||||||||")
+
         if os.path.exists(temp_video_path):
             os.unlink(temp_video_path)
+
+        if cover_original_path and os.path.exists(cover_original_path):
+            os.unlink(cover_original_path)
+
+        for short in shorts_local_data:
+            if os.path.exists(short.get("short_path", "")):
+                os.unlink(short["short_path"])
+            if os.path.exists(short.get("cover_path", "")):
+                os.unlink(short["cover_path"])
 
 
 # =========================================================
@@ -333,7 +510,9 @@ def delete_video(video):
         with transaction.atomic():
 
             # 1️⃣ Borrar shorts + covers
-            for short in video.shorts.all():
+            old_shorts = list(video.shorts.all())
+
+            for short in old_shorts:
 
                 # Borrar video del short en Cloudinary
                 if short.cloudinary_public_id:

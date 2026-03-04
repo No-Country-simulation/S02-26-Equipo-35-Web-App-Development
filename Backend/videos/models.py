@@ -15,6 +15,10 @@ class Video(models.Model):
         READY = "ready", "Ready"
         FAILED = "failed", "Failed"
 
+    class TypeShort(models.TextChoices):
+        VERTICAL = "vertical", "Vertical"
+        HORIZONTAL = "horizontal", "Horizontal"
+
     file_name = models.CharField(max_length=255)
 
     # URL final en Cloudinary
@@ -45,7 +49,14 @@ class Video(models.Model):
     width = models.IntegerField(null=True, blank=True)
     height = models.IntegerField(null=True, blank=True)
     aspect_ratio = models.CharField(max_length=10, null=True, blank=True)
+    has_audio = models.BooleanField(null=True, blank=True)
     file_size = models.PositiveIntegerField(null=True, blank=True)
+    type_short = models.CharField(
+        max_length=20,
+        choices=TypeShort.choices,
+        default=TypeShort.VERTICAL,
+        db_index=True,  # optimiza filtros por tipo de short
+    )
 
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
@@ -60,6 +71,7 @@ class Video(models.Model):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["user", "status"]),
+            models.Index(fields=["user", "type_short"]),
         ]
 
     def __str__(self):
