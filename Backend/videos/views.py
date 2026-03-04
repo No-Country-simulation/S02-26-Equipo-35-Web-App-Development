@@ -67,9 +67,7 @@ class VideoViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        type_short = serializer.validated_data.get(
-            "type_short", Video.TypeShort.VERTICAL
-        )
+        type_short = serializer.validated_data["type_short"]
         video = self._create_video_instance(
             user=request.user,
             validated_data=serializer.validated_data,
