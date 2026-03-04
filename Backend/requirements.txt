@@ -1,5 +1,4 @@
 amqp==5.3.1
-annotated-types==0.7.0
 asgiref==3.11.1
 attrs==25.4.0
 billiard==4.2.4
@@ -23,7 +22,6 @@ django_celery_results==2.6.0
 djangorestframework==3.16.1
 drf-yasg==1.21.14
 filelock==3.24.2
-frozenlist==1.8.0
 fsspec==2026.2.0
 gunicorn==21.2.0
 idna==3.11
@@ -31,16 +29,12 @@ inflection==0.5.1
 Jinja2==3.1.6
 kombu==5.6.2
 MarkupSafe==3.0.3
-more-itertools==10.8.0
-networkx==3.6.1
 numpy==2.3.5
 packaging==26.0
 pillow==12.1.1
 psycopg==3.3.2
 psycopg-binary==3.3.2
 pycparser==3.0
-pydantic==2.12.5
-pydantic_core==2.41.5
 pyparsing==3.3.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
@@ -51,13 +45,10 @@ requests==2.32.5
 setuptools==82.0.0
 six==1.17.0
 sqlparse==0.5.5
-tenacity==9.1.4
 typing_extensions==4.15.0
 tzdata==2025.3
 tzlocal==5.3.1
-uritemplate==4.2.0
 urllib3==2.6.3
 vine==5.1.0
 wcwidth==0.6.0
 whitenoise==6.11.0
-yarl==1.22.0
