@@ -66,12 +66,7 @@ def generate_fallback_clips(video_duration):
 # =========================================================
 def run_ffmpeg(command):
     try:
-        subprocess.run(
-            command,
-            check=True,
-            text=True,
-            capture_output=True,
-        )
+        subprocess.run(command, check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
         logger.error("FFmpeg failed:\n%s", e.stderr)
         raise
@@ -107,9 +102,33 @@ def generate_cover_from_video(video_path, second=1):
 
 
 # =========================================================
+# GENERATE FILTER
+# =========================================================
+def build_video_filter(type_short: str) -> str:
+    """
+    Devuelve el filtro FFmpeg según el tipo de short.
+    """
+
+    if type_short == "vertical":
+        # recorte central 9:16
+        return (
+            "crop=trunc(ih*9/16/2)*2:ih:"
+            "(iw-trunc(ih*9/16/2)*2)/2:0,"
+            "scale=720:1280"
+        )
+
+    elif type_short == "horizontal":
+        # letterbox negro: escala ancho 720, altura proporcional, luego pad a 720x1280
+        return "scale=720:-1," "pad=720:1280:(ow-iw)/2:(oh-ih)/2:black"
+
+    else:
+        raise ValueError("Tipo de short inválido")
+
+
+# =========================================================
 # GENERATE SHORTS
 # =========================================================
-def generate_shorts(video_path, clips_data):
+def generate_shorts(video_path, clips_data, type_short="vertical"):
     """
     🔥 1 SOLO FFMPEG POR SHORT
     🔥 720x1280
@@ -119,6 +138,11 @@ def generate_shorts(video_path, clips_data):
     shorts_data = []
     segments = []
 
+    video_filter = build_video_filter(type_short)
+
+    # -----------------------------
+    # Normalizar segmentos
+    # -----------------------------
     for clip in clips_data:
         try:
             start = float(clip.get("start", 0))
@@ -129,6 +153,9 @@ def generate_shorts(video_path, clips_data):
         if end > start:  # solo aseguramos start < end
             segments.append((start, end))
 
+    # -----------------------------
+    # Generar shorts
+    # -----------------------------
     for start, end in segments:
         start = round(start, 3)
         end = round(end, 3)
@@ -136,35 +163,44 @@ def generate_shorts(video_path, clips_data):
         with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_short:
             try:
                 # Generar short
-                run_ffmpeg(
-                    [
-                        "ffmpeg",
-                        "-ss",
-                        str(start),
-                        "-i",
-                        video_path,
-                        "-t",
-                        str(end - start),
-                        "-vf",
-                        "crop=trunc(ih*9/16/2)*2:ih:(iw-trunc(ih*9/16/2)*2)/2:0,scale=720:1280",
-                        "-c:v",
-                        "libx264",
-                        "-preset",
-                        "veryfast",
-                        "-crf",
-                        "23",
-                        "-c:a",
-                        "aac",
-                        "-b:a",
-                        "128k",
-                        "-y",
-                        temp_short.name,
-                    ]
-                )
+                command = [
+                    "ffmpeg",
+                    "-ss",
+                    str(start),
+                    "-i",
+                    video_path,
+                    "-t",
+                    str(end - start),
+                ]
+                # aplicar el filtros según el tipo de short
+                command += ["-vf", video_filter]
 
-                # Generar cover reutilizando función
+                # Codecs finales
+                command += [
+                    "-c:v",
+                    "libx264",
+                    "-preset",
+                    "veryfast",
+                    "-crf",
+                    "23",
+                    "-c:a",
+                    "aac",
+                    "-b:a",
+                    "128k",
+                    "-movflags",
+                    "+faststart",
+                    "-y",
+                    temp_short.name,
+                ]
+
+                run_ffmpeg(command)
+
+                # -----------------------------
+                # Generar cover
+                # -----------------------------
                 clip_duration = end - start
                 second_for_cover = min(1, clip_duration / 2)
+
                 cover_path = generate_cover_from_video(
                     temp_short.name, second_for_cover
                 )
@@ -239,7 +275,7 @@ def get_video_metadata(video_path):
 # CELERY TASK
 # =========================================================
 @shared_task
-def process_video_task(video_id, temp_video_path, file_name):
+def process_video_task(video_id, temp_video_path, file_name, type_short):
     video = None
     job = None
     cover_original_path = None
@@ -280,6 +316,7 @@ def process_video_task(video_id, temp_video_path, file_name):
         video.has_audio = metadata["has_audio"]
         video.file_size = os.path.getsize(temp_video_path)
 
+        # SOLO ORIGINAL: validar horizontal
         if video.height > video.width:
             raise ValueError("Solo se permiten videos horizontales (landscape)")
 
@@ -350,7 +387,9 @@ def process_video_task(video_id, temp_video_path, file_name):
         # -----------------------
         # GENERAR SHORTS LOCAL
         # -----------------------
-        shorts_local_data = generate_shorts(temp_video_path, clips_data)
+        shorts_local_data = generate_shorts(
+            temp_video_path, clips_data, type_short=type_short
+        )
 
         job.progress = 70
         job.save()
@@ -381,6 +420,7 @@ def process_video_task(video_id, temp_video_path, file_name):
         video.cover_original_url = cover_original_upload["secure_url"]
         video.cover_original_cloudinary_public_id = cover_original_upload["public_id"]
         video.save()
+        video.shorts.all().delete()  # limpiar shorts anteriores por si acaso
 
         # -----------------------
         # Subir shorts (IDEMPOTENTE)
