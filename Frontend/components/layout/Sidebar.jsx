@@ -22,7 +22,7 @@ export const Sidebar = ({ language, setLanguage, theme, toggleTheme, t }) => {
           <div className='bg-primary bg-opacity-10 p-2 rounded-4 shadow-sm border border-primary border-opacity-10'>
             <Clapperboard size={20} className='text-primary' />
           </div>
-          <span className='ms-3 h6 mb-0 fw-bold'>VERTICAL AI</span>
+          <span className='ms-3 h6 mb-0 fw-bold'>GO VERTICAL</span>
         </div>
 
         {/* Navigation */}

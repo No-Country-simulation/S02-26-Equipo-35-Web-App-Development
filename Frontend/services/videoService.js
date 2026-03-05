@@ -4,7 +4,7 @@ const getAuthToken = () => {
   return localStorage.getItem("token");
 };
 
-export const uploadVideo = async (file) => {
+export const uploadVideo = async (file, typeShort = "vertical") => {
   const token = getAuthToken();
 
   if (!token) {
@@ -14,6 +14,7 @@ export const uploadVideo = async (file) => {
   const formData = new FormData();
   formData.append("file_name", file.name);
   formData.append("video_file", file);
+  formData.append("type_short", typeShort);
 
   const response = await fetch(`${API_URL}/videos/`, {
     method: "POST",

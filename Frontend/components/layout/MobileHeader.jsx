@@ -6,7 +6,7 @@ export const MobileHeader = ({ onMenuClick }) => {
         <div className='bg-white p-1 rounded-circle me-3'>
           <Clapperboard className='w-5 h-5 text-primary' />
         </div>
-        <span className='fw-bold text-white tracking-wider'>VERTICAL AI</span>
+        <span className='fw-bold text-white tracking-wider'>GO VERTICAL</span>
       </div>
 
       <button className='btn btn-light' onClick={onMenuClick}>

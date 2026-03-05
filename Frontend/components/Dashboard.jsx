@@ -7,7 +7,14 @@ import { Button } from "./Button";
 import { getVideos, deleteVideo } from "../services/videoService";
 import { useNavigate } from "react-router-dom";
 import { ConfirmModal } from "./common/ConfirmModal";
-export const Dashboard = ({ onFileSelect, recentProjects }) => {
+import { ShortTypeToggle } from "./ShortTypeToggle";
+
+export const Dashboard = ({ 
+  onFileSelect, 
+  recentProjects,
+  typeShort,
+  setTypeShort
+  }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [recentVideos, setRecentVideos] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -32,7 +39,7 @@ export const Dashboard = ({ onFileSelect, recentProjects }) => {
       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
         const file = e.dataTransfer.files[0];
         if (file.type.startsWith("video/")) {
-          onFileSelect(file);
+          onFileSelect(file, typeShort);
         } else {
           alert(t("dashboard.fileError"));
         }
@@ -80,6 +87,10 @@ export const Dashboard = ({ onFileSelect, recentProjects }) => {
       <div className='row g-4 mb-5'>
         {/* Upload Area */}
         <div className='col-lg-12'>
+          <ShortTypeToggle
+            value={typeShort}
+            onChange={setTypeShort}
+          />
           <UploadArea
             isDragging={isDragging}
             onDragOver={handleDragOver}
@@ -88,6 +99,7 @@ export const Dashboard = ({ onFileSelect, recentProjects }) => {
             onSelectFile={onFileSelect}
             t={t}
           />
+
         </div>
 
         {/* Video Configuration */}

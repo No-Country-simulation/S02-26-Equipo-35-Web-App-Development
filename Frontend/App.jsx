@@ -31,6 +31,9 @@ function AppContent() {
   const location = useLocation();
   const { theme, toggleTheme, language, setLanguage, t } = useApp();
   const [currentVideoId, setCurrentVideoId] = useState(null);
+
+  const [typeShort, setTypeShort] = useState("vertical");
+
   const isAuthPage =
     location.pathname === "/login" || location.pathname === "/register";
 
@@ -51,14 +54,14 @@ function AppContent() {
     setLogs((prev) => [...prev, newLog]);
   };
 
-  const handleFileSelect = async (file) => {
+  const handleFileSelect = async (file, typeShort) => {
     try {
       setSelectedFile(file);
       setLogs([]);
 
       addLog("Uploading video...", "info");
 
-      const video = await uploadVideo(file);
+      const video = await uploadVideo(file, typeShort);
       const videoId = video.id ?? video.video_id;
 
       if (!videoId) {
@@ -156,6 +159,8 @@ function AppContent() {
                     <Dashboard
                       onFileSelect={handleFileSelect}
                       recentProjects={MOCK_PROJECTS.slice(0, 3)}
+                      typeShort={typeShort}
+                      setTypeShort={setTypeShort}
                     />
                   </PrivateRoute>
                 }
