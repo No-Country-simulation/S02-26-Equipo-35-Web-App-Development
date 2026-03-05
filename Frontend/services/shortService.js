@@ -1,14 +1,14 @@
-const API_URL = "http://localhost:8000/api";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const getAuthToken = () => {
-  return localStorage.getItem("token");
+  return localStorage.getItem('token');
 };
 
 export const getShortsByVideo = async (videoId, page = 1) => {
   const token = getAuthToken();
 
   if (!token) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   const response = await fetch(
@@ -17,7 +17,7 @@ export const getShortsByVideo = async (videoId, page = 1) => {
       headers: {
         Authorization: `Token ${token}`,
       },
-    }
+    },
   );
 
   if (!response.ok) {
@@ -33,17 +33,14 @@ export const getShorts = async (page = 1) => {
   const token = getAuthToken();
 
   if (!token) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
-  const response = await fetch(
-    `${API_URL}/shorts/?page=${page}`,
-    {
-      headers: {
-        Authorization: `Token ${token}`,
-      },
-    }
-  );
+  const response = await fetch(`${API_URL}/shorts/?page=${page}`, {
+    headers: {
+      Authorization: `Token ${token}`,
+    },
+  });
 
   if (!response.ok) {
     throw new Error(await response.text());
@@ -56,11 +53,11 @@ export const deleteShort = async (id) => {
   const token = getAuthToken();
 
   if (!token) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   const response = await fetch(`${API_URL}/shorts/${id}/`, {
-    method: "DELETE",
+    method: 'DELETE',
     headers: {
       Authorization: `Token ${token}`,
     },
