@@ -4,8 +4,6 @@
 
 Al convertir videos **horizontales a formato vertical**, suele perderse información importante de la imagen. Además, generar shorts de forma manual consume tiempo y no es el core del negocio para **startups, pymes y emprendedores**.
 
-Además, la generación manual de shorts a partir de videos largos requiere tiempo y recursos, lo que representa una tarea operativa que no forma parte del core del negocio para startups, pymes y emprendedores.
-
 ## 💡 Solución
 
 Nuestra plataforma permite generar automáticamente shorts verticales a partir de videos horizontales largos.
