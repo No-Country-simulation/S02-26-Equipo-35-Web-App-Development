@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useApp } from '../contexts/AppContext';
-import { VideoPlayer } from './result/VideoPlayer';
-import { ShortsEditor } from './result/ShortsEditor';
+import React, { useState, useEffect } from "react";
+import { useApp } from "../contexts/AppContext";
+import { VideoPlayer } from "./result/VideoPlayer";
+import { ShortsEditor } from "./result/ShortsEditor";
+import { ShortCard } from "./common/ShortCard";
 
 export const ResultView = ({ shorts: initialShorts, onBack }) => {
   const [shorts, setShorts] = useState(initialShorts);
@@ -9,9 +10,17 @@ export const ResultView = ({ shorts: initialShorts, onBack }) => {
   const [selectedShortId, setSelectedShortId] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const { t } = useApp();
+  console.log(shorts, "aa");
+
+  // 👇 SINCRONIZA cuando cambian las props
+  useEffect(() => {
+    setShorts(initialShorts);
+  }, [initialShorts]);
 
   const handleTextChange = (id, newText) => {
-    setShorts(prev => prev.map(s => s.id === id ? { ...s, text: newText } : s));
+    setShorts((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, text: newText } : s)),
+    );
   };
 
   const handleExport = () => {
@@ -26,6 +35,7 @@ export const ResultView = ({ shorts: initialShorts, onBack }) => {
   const handleShare = () => {
     alert("Link copied to clipboard! (Simulation)");
   };
+  console.log(shorts);
 
   // Simulate video playback progress
   useEffect(() => {
@@ -39,10 +49,11 @@ export const ResultView = ({ shorts: initialShorts, onBack }) => {
   }, [isPlaying]);
 
   return (
-    <div className="container-fluid p-0 animate-fade-in h-100 pb-5">
-      <div className="row g-4 h-100">
+    <div className='container-fluid p-0 animate-fade-in h-100 pb-5'>
+      <div className='row g-4 h-100'>
         {/* Left: Video Player */}
-        <div className="col-lg-7 d-flex flex-column h-100">
+        <div className=' d-flex flex-column h-100'>
+         
           <VideoPlayer
             isPlaying={isPlaying}
             onTogglePlay={() => setIsPlaying(!isPlaying)}
@@ -52,7 +63,10 @@ export const ResultView = ({ shorts: initialShorts, onBack }) => {
         </div>
 
         {/* Right: Editor & Actions */}
-        <div className="col-lg-5 d-flex flex-column h-100" style={{ maxHeight: 'calc(100vh - 120px)' }}>
+        {/* <div
+          className='col-lg-5 d-flex flex-column h-100'
+          style={{ maxHeight: "calc(100vh - 120px)" }}
+        >
           <ShortsEditor
             shorts={shorts}
             selectedShortId={selectedShortId}
@@ -64,7 +78,7 @@ export const ResultView = ({ shorts: initialShorts, onBack }) => {
             onShare={handleShare}
             t={t}
           />
-        </div>
+        </div> */}
       </div>
     </div>
   );

@@ -1,18 +1,22 @@
 import logging
 import tempfile
-
+import os
+from django.conf import settings
 from rest_framework import viewsets, status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.decorators import action
-
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 from .models import Video
-from .serializers import VideoUploadSerializer, VideoResponseSerializer
-from .services import process_video_task
+from .serializers import (
+    VideoUploadSerializer,
+    VideoResponseSerializer,
+    VideoUpdateSerializer,
+)
+from .services import process_video_task, delete_video
 
 logger = logging.getLogger(__name__)
 
@@ -32,22 +36,21 @@ class VideoViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return Video.objects.none()
-
         return Video.objects.filter(user=self.request.user).order_by("-created_at")
 
     # ==============================
-    # Serializers
+    # Serializer
     # ==============================
 
     def get_serializer_class(self):
-        return (
-            VideoUploadSerializer
-            if self.action == "create"
-            else VideoResponseSerializer
-        )
+        if self.action == "create":
+            return VideoUploadSerializer
+        elif self.action in ["update", "partial_update"]:
+            return VideoUpdateSerializer
+        return VideoResponseSerializer
 
     # ==============================
-    # CREATE (Upload + Trigger Task)
+    # CREATE VIDEO
     # ==============================
 
     @swagger_auto_schema(
@@ -58,32 +61,35 @@ class VideoViewSet(viewsets.ModelViewSet):
                 schema=VideoResponseSerializer(),
             )
         },
+        operation_summary="Subir video y comenzar procesamiento",
         operation_description="Sube un video y dispara procesamiento asíncrono",
     )
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
+        type_short = serializer.validated_data["type_short"]
         video = self._create_video_instance(
-            user=request.user, validated_data=serializer.validated_data
+            user=request.user,
+            validated_data=serializer.validated_data,
+            type_short=type_short,
         )
 
         temp_path = self._save_temp_file(serializer.validated_data["video_file"])
 
-        process_video_task.delay(video.id, temp_path, video.file_name)
+        process_video_task.delay(video.id, temp_path, video.file_name, type_short)
 
         return Response(
-            self._build_create_response(video),
-            status=status.HTTP_202_ACCEPTED,
+            self._build_create_response(video), status=status.HTTP_202_ACCEPTED
         )
 
     # ==============================
-    # Custom Actions
+    # VIDEO STATUS
     # ==============================
 
     @swagger_auto_schema(
         operation_description="Consulta estado y progreso de un video",
         responses={200: VideoResponseSerializer()},
+        operation_summary="Consultar estado y progreso del video",
     )
     @action(detail=True, methods=["get"])
     def status(self, request, pk=None):
@@ -95,83 +101,87 @@ class VideoViewSet(viewsets.ModelViewSet):
                 "id": video.id,
                 "status": video.status,
                 "progress": job.progress if job else 0,
-                "error": (
-                    job.error_message if job and job.status == "failed" else None
-                ),
+                "error": job.error_message if job and job.status == "failed" else None,
             }
         )
 
-    @swagger_auto_schema(
-        operation_description="Obtiene los shorts generados para un video",
-        responses={200: VideoResponseSerializer()},
-    )
-    @action(detail=True, methods=["get"])
-    def shorts(self, request, pk=None):
-        video = self.get_object()
-
-        if video.status != "ready":
-            return Response(
-                {"detail": f"Shorts no disponibles. Estado actual: {video.status}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        return Response(VideoResponseSerializer(video).data)
+    # ==============================
+    # VIDEO DOWNLOAD
+    # ==============================
 
     @swagger_auto_schema(
         operation_description="Obtiene la URL del video original",
-        responses={200: openapi.Response(description="URL del video")},
+        responses={
+            200: openapi.Response(description="URL del video"),
+            404: openapi.Response(description="Video no disponible"),
+        },
+        operation_summary="Obtener URL de descarga del video original",
     )
     @action(detail=True, methods=["get"])
     def download(self, request, pk=None):
         video = self.get_object()
-
         if not video.file_url:
             return Response(
-                {"detail": "Video no disponible"},
-                status=status.HTTP_404_NOT_FOUND,
+                {"detail": "Video no disponible"}, status=status.HTTP_404_NOT_FOUND
+            )
+        return Response({"file_url": video.file_url, "file_name": video.file_name})
+
+    # ==============================
+    # DELETE DOWNLOAD
+    # ==============================
+
+    @swagger_auto_schema(
+        operation_summary="Borrar video y todo lo asociado",
+        operation_description=(
+            "Borra el video original, todos los shorts y sus covers "
+            "tanto de la base de datos como de Cloudinary"
+        ),
+        responses={
+            204: "Video eliminado correctamente",
+            404: "Video no encontrado",
+            500: "Error eliminando recursos",
+        },
+    )
+    def destroy(self, request, *args, **kwargs):
+        video = self.get_object()
+
+        try:
+            delete_video(video)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response(
+                {"detail": f"Error eliminando video: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        return Response(
-            {
-                "file_url": video.file_url,
-                "file_name": video.file_name,
-            }
-        )
-
     # ==============================
-    # Private Helpers
+    # HELPERS
     # ==============================
 
-    def _create_video_instance(self, user, validated_data):
-        """
-        Crea el registro del video en estado 'uploaded'
-        """
-        video_file = validated_data["video_file"]
-        file_name = validated_data.get("file_name", video_file.name)
+    def _create_video_instance(self, user, validated_data, type_short):
+        file_name = validated_data.get("file_name") or validated_data["video_file"].name
 
         return Video.objects.create(
             user=user,
             file_name=file_name,
-            status="uploaded",
+            status=Video.Status.UPLOADED,
+            type_short=type_short,
         )
 
     def _save_temp_file(self, video_file):
-        """
-        Guarda archivo temporal en disco y devuelve la ruta.
-        """
+        temp_dir = os.path.join(settings.BASE_DIR, "temp")
+        os.makedirs(temp_dir, exist_ok=True)
         with tempfile.NamedTemporaryFile(
-            suffix=f"_{video_file.name}",
-            delete=False,
+            suffix=f"_{video_file.name}", delete=False, dir=temp_dir
         ) as tmp_file:
             for chunk in video_file.chunks():
                 tmp_file.write(chunk)
-
         logger.info(f"Archivo temporal creado: {tmp_file.name}")
         return tmp_file.name
 
     def _build_create_response(self, video):
         """
-        Estructura estándar de respuesta para create()
+        Retorna info básica de video recién subido
         """
         return {
             "id": video.id,

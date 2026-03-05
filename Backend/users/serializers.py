@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from .models import User
+from PIL import Image
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -60,6 +61,21 @@ class ProfileImageSerializer(serializers.ModelSerializer):
 
         if value.size > max_size:
             raise serializers.ValidationError("La imagen no puede superar 3MB")
+
+        try:
+            img = Image.open(value)
+            format = img.format
+            value.seek(0)  # puntero a cero
+        except Exception:
+            raise serializers.ValidationError("Archivo de imagen inválido")
+
+        # Opcional: limitar formatos permitidos
+        allowed_formats = ["JPEG", "PNG", "WEBP"]
+
+        if format not in allowed_formats:
+            raise serializers.ValidationError(
+                f"Formato no permitido. Permitidos: {', '.join(allowed_formats)}"
+            )
 
         return value
 

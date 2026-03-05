@@ -1,116 +1,244 @@
-import React, { useState } from 'react';
-import { Dashboard } from './components/Dashboard';
-import { ProcessingView } from './components/ProcessingView';
-import { ResultView } from './components/ResultView';
-import { ProjectsView } from './components/ProjectsView';
-import { HelpView } from './components/HelpView';
-import { ProfileView } from './components/ProfileView';
-import { generateSmartCaptions } from './services/geminiService';
-import { AppProvider, useApp } from './contexts/AppContext';
+import React, { useState } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { Dashboard } from "./components/Dashboard";
+import { ProcessingView } from "./components/ProcessingView";
+import { ResultView } from "./components/ResultView";
+import { ProjectsView } from "./components/ProjectsView";
+import { HelpView } from "./components/HelpView";
+import { ProfileView } from "./components/ProfileView";
 
-import { MOCK_PROJECTS } from './utils/mockData';
+import { uploadVideo } from "./services/videoService";
+import { getShortsByVideo } from "./services/shortService";
+import { AppProvider, useApp } from "./contexts/AppContext";
 
-import { Sidebar } from './components/layout/Sidebar';
-import { MobileHeader } from './components/layout/MobileHeader';
+import { MOCK_PROJECTS } from "./utils/mockData";
+import { useLocation } from "react-router-dom";
+import { Sidebar } from "./components/layout/Sidebar";
+import { MobileHeader } from "./components/layout/MobileHeader";
+import { LoginView } from "./components/auth/LoginView";
+import { RegisterView } from "./components/auth/RegisterView";
+import { PrivateRoute } from "./components/auth/PrivateRoute";
+import { useAuth } from "./contexts/AuthContext";
+import { VideoShortsView } from "./components/VideoShortsView";
 
 function AppContent() {
-  const [currentScreen, setCurrentScreen] = useState('dashboard');
+  const navigate = useNavigate();
+  const { token } = useAuth();
   const [selectedFile, setSelectedFile] = useState(null);
   const [logs, setLogs] = useState([]);
-  const [captions, setCaptions] = useState([]);
+  const [shorts, setShorts] = useState([]);
+  const location = useLocation();
   const { theme, toggleTheme, language, setLanguage, t } = useApp();
+  const [currentVideoId, setCurrentVideoId] = useState(null);
 
-  const addLog = (message, type = 'info') => {
+  const [typeShort, setTypeShort] = useState("vertical");
+
+  const isAuthPage =
+    location.pathname === "/login" || location.pathname === "/register";
+
+  const isAuthenticated = !!token;
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const addLog = (message, type = "info") => {
     const newLog = {
       id: Math.random().toString(36).substr(2, 9),
-      timestamp: new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      timestamp: new Date().toLocaleTimeString([], {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
       message,
-      type
+      type,
     };
-    setLogs(prev => [...prev, newLog]);
+    setLogs((prev) => [...prev, newLog]);
   };
 
-  const handleFileSelect = (file) => {
-    setSelectedFile(file);
-    setCurrentScreen('processing');
-    setLogs([]);
+  const handleFileSelect = async (file, typeShort) => {
+    try {
+      setSelectedFile(file);
+      setLogs([]);
+
+      addLog("Uploading video...", "info");
+
+      const video = await uploadVideo(file, typeShort);
+      const videoId = video.id ?? video.video_id;
+
+      if (!videoId) {
+        throw new Error("Video ID not found");
+      }
+
+      setCurrentVideoId(videoId);
+
+      addLog("Video uploaded. Processing started...", "info");
+
+      navigate("/processing");
+    } catch (error) {
+      console.error(error);
+      addLog("Upload failed", "error");
+    }
   };
 
   const handleProcessingComplete = async () => {
     try {
-      const generated = await generateSmartCaptions(selectedFile?.name || "Viral Video", language);
-      setCaptions(generated);
-    } catch (e) {
-      console.error(e);
+      const generatedShorts = await getShortsByVideo(currentVideoId);
+      setShorts(generatedShorts);
+      navigate("/result");
+    } catch (error) {
+      addLog("Error fetching shorts", "error");
     }
-    setCurrentScreen('result');
   };
 
   const handleBackToDashboard = () => {
     setSelectedFile(null);
     setLogs([]);
-    setCurrentScreen('dashboard');
+    setShorts([]);
+    navigate("/");
   };
 
   return (
-    <div className="container-fluid min-vh-100 bg-light-subtle font-sans transition-all duration-300">
-      <div className="row h-100">
-        <Sidebar
-          currentScreen={currentScreen}
-          onNavigate={setCurrentScreen}
-          language={language}
-          setLanguage={setLanguage}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          t={t}
-        />
+    <div className='container-fluid min-vh-100 bg-light-subtle font-sans transition-all duration-300'>
+      <div className='row h-100'>
+        {/* Sidebar mobile React-controlled */}
+        {isAuthenticated && !isAuthPage && (
+          <>
+            {/* Desktop Sidebar */}
+            <div className='d-none d-md-block col-md-3 col-lg-2 p-0'>
+              <Sidebar
+                language={language}
+                setLanguage={setLanguage}
+                theme={theme}
+                toggleTheme={toggleTheme}
+                t={t}
+              />
+            </div>
 
-        {/* Main Content Area */}
-        <main className="ms-md-auto col-md-9 col-lg-10 px-md-4 py-4 min-vh-100 position-relative">
-          <MobileHeader onProfileClick={() => setCurrentScreen('profile')} />
+            {/* Mobile Sidebar */}
+            <div className={`mobile-sidebar ${isSidebarOpen ? "open" : ""}`}>
+              <Sidebar
+                language={language}
+                setLanguage={setLanguage}
+                theme={theme}
+                toggleTheme={toggleTheme}
+                t={t}
+              />
+            </div>
 
-          <div className="container-xl p-2 p-md-4">
-            {currentScreen === 'dashboard' && (
-              <Dashboard
-                onFileSelect={handleFileSelect}
-                recentProjects={MOCK_PROJECTS.slice(0, 3)}
+            {/* Overlay */}
+            {isSidebarOpen && (
+              <div
+                className='sidebar-overlay'
+                onClick={() => setIsSidebarOpen(false)}
               />
             )}
+          </>
+        )}
+        <main
+          className={`
+   ${isAuthenticated && !isAuthPage ? "col-12 col-md-9 col-lg-10 ms-md-auto" : "col-12"}
+          px-md-4  min-vh-100 position-relative
+        `}
+        >
+          {/* Mostrar MobileHeader solo cuando está autenticado */}
+          {isAuthenticated && !isAuthPage && (
+            <MobileHeader onMenuClick={() => setIsSidebarOpen(true)} />
+          )}
 
-            {currentScreen === 'processing' && (
-              <ProcessingView
-                file={selectedFile}
-                onComplete={handleProcessingComplete}
-                addLog={addLog}
-                logs={logs}
+          <div className='container-xl p-2 p-md-4'>
+            <Routes>
+              <Route
+                path='/login'
+                element={token ? <Navigate to='/' replace /> : <LoginView />}
               />
-            )}
+              <Route path='/register' element={<RegisterView />} />
 
-            {currentScreen === 'result' && (
-              <ResultView
-                shorts={captions}
-                onBack={handleBackToDashboard}
+              <Route
+                path='/'
+                element={
+                  <PrivateRoute>
+                    <Dashboard
+                      onFileSelect={handleFileSelect}
+                      recentProjects={MOCK_PROJECTS.slice(0, 3)}
+                      typeShort={typeShort}
+                      setTypeShort={setTypeShort}
+                    />
+                  </PrivateRoute>
+                }
               />
-            )}
 
-            {currentScreen === 'projects' && (
-              <ProjectsView projects={MOCK_PROJECTS} />
-            )}
+              <Route
+                path='/processing'
+                element={
+                  <PrivateRoute>
+                    <ProcessingView
+                      videoId={currentVideoId}
+                      onComplete={handleProcessingComplete}
+                    />
+                  </PrivateRoute>
+                }
+              />
 
-            {currentScreen === 'help' && <HelpView />}
+              <Route
+                path='/result'
+                element={
+                  <PrivateRoute>
+                    <ResultView
+                      shorts={shorts}
+                      onBack={handleBackToDashboard}
+                    />
+                  </PrivateRoute>
+                }
+              />
 
-            {currentScreen === 'profile' && <ProfileView />}
+              <Route
+                path='/projects'
+                element={
+                  <PrivateRoute>
+                    <ProjectsView projects={MOCK_PROJECTS} />
+                  </PrivateRoute>
+                }
+              />
+
+              <Route
+                path='/profile'
+                element={
+                  <PrivateRoute>
+                    <ProfileView />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path='/help'
+                element={
+                  <PrivateRoute>
+                    <HelpView />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path='/projects/:videoId'
+                element={
+                  <PrivateRoute>
+                    <VideoShortsView />
+                  </PrivateRoute>
+                }
+              />
+
+              <Route path='*' element={<Navigate to='/' />} />
+            </Routes>
           </div>
         </main>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 }
 
 export default function App() {
   return (
     <AppProvider>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </AppProvider>
   );
 }
