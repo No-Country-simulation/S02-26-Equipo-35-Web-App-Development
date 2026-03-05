@@ -1,39 +1,38 @@
-const API_URL = "http://localhost:8000/api";
+const API_URL = import.meta.env.VITE_API_URL;
 
 //obtener datos perfil
 export const getProfile = async (token) => {
   const response = await fetch(`${API_URL}/auth/profile/`, {
-    method: "GET",
+    method: 'GET',
     headers: {
       Authorization: `Token ${token}`,
     },
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch profile");
+    throw new Error('Failed to fetch profile');
   }
 
   return await response.json();
-
 };
 
 export const updateProfileImage = async (token, imageFile) => {
   const formData = new FormData();
-  formData.append("profile_image", imageFile);
+  formData.append('profile_image', imageFile);
 
   const response = await fetch(`${API_URL}/auth/update_image/`, {
-    method: "PATCH",
+    method: 'PATCH',
     headers: {
       Authorization: `Token ${token}`,
     },
     body: formData,
   });
-  
+
   const data = await response.json();
-  console.log("Server response: ", data);
+  console.log('Server response: ', data);
 
   if (!response.ok) {
-    throw new Error("Error updating profile image");
+    throw new Error('Error updating profile image');
   }
 
   return data;
@@ -41,14 +40,14 @@ export const updateProfileImage = async (token, imageFile) => {
 
 export const deleteProfileImage = async (token) => {
   const response = await fetch(`${API_URL}/auth/delete_image/`, {
-    method: "DELETE",
+    method: 'DELETE',
     headers: {
       Authorization: `Token ${token}`,
     },
   });
 
   if (!response.ok) {
-    throw new Error("Error deleting profile image");
+    throw new Error('Error deleting profile image');
   }
 
   return await response.json();
@@ -57,11 +56,11 @@ export const deleteProfileImage = async (token) => {
 export const updateProfile = async (token, data) => {
   const formData = new FormData();
 
-  formData.append("first_name", data.first_name);
-  formData.append("last_name", data.last_name);
+  formData.append('first_name', data.first_name);
+  formData.append('last_name', data.last_name);
 
   const response = await fetch(`${API_URL}/auth/profile/`, {
-    method: "PATCH",
+    method: 'PATCH',
     headers: {
       Authorization: `Token ${token}`,
     },
@@ -71,18 +70,9 @@ export const updateProfile = async (token, data) => {
   const result = await response.json();
 
   if (!response.ok) {
-    console.log("Backend error:", result);
-    throw new Error("Error updating profile");
+    console.log('Backend error:', result);
+    throw new Error('Error updating profile');
   }
 
   return result;
 };
-
-
-
-
-
-
-
-
-
