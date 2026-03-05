@@ -24,6 +24,11 @@ class VideoUploadSerializer(serializers.ModelSerializer):
     aspect_ratio = serializers.CharField(read_only=True)
     file_size = serializers.IntegerField(read_only=True)
     status = serializers.CharField(read_only=True)
+    type_short = serializers.ChoiceField(
+        choices=Video.TypeShort.choices,
+        required=False,
+        default=Video.TypeShort.VERTICAL,
+    )
 
     MAX_FILE_SIZE = 500 * 1024 * 1024  # 500MB
     ALLOWED_EXTENSIONS = {"mp4", "mov", "avi", "mkv", "webm"}
@@ -44,6 +49,7 @@ class VideoUploadSerializer(serializers.ModelSerializer):
             "aspect_ratio",
             "file_size",
             "status",
+            "type_short",
             "created_at",
         ]
         read_only_fields = [
@@ -110,6 +116,7 @@ class VideoResponseSerializer(serializers.ModelSerializer):
             "aspect_ratio",
             "file_size",
             "status",
+            "type_short",
             "created_at",
         ]
         read_only_fields = fields
@@ -121,6 +128,11 @@ class VideoResponseSerializer(serializers.ModelSerializer):
 
 
 class VideoUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer para actualizar campos editables del video.
+    Actualmente solo permite actualizar el nombre.
+    """
+
     class Meta:
         model = Video
         fields = ["file_name"]
