@@ -26,11 +26,9 @@ Nuestra plataforma permite generar automáticamente shorts verticales a partir d
 
 ## 🚀 Demo
 
-🔗 Próximamente
+                              📸 Vista previa del funcionamiento:
 
-📸 Vista previa del funcionamiento:
-
-![Demo Preview](assets/images/demo.gif)
+![Demo Preview](assets/videos/demo.gif)
 
 ---
 
@@ -113,4 +111,5 @@ Proyecto desarrollado por:
 
 ## 📄 Licencia
 
-Este proyecto se desarrolla con fines educativos y de demostración profesional.
+Este proyecto se desarrolla con fines educativos y de demostración profesional.  
+Distribuido bajo la licencia [GNU GPL v3](LICENSE).
