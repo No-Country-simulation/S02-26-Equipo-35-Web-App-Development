@@ -111,4 +111,5 @@ Proyecto desarrollado por:
 
 ## 📄 Licencia
 
-Este proyecto se desarrolla con fines educativos y de demostración profesional.
+Este proyecto se desarrolla con fines educativos y de demostración profesional.  
+Distribuido bajo la licencia [GNU GPL v3](LICENSE).
