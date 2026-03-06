@@ -1,62 +1,79 @@
-# Vertical AI ⬅️ [Back](../README.md)
+# Go Vertical Frontend ⬅️ [Back](../README.md)
 
-Vertical AI es una herramienta innovadora diseñada para la **automatización de la generación de videos verticales** a partir de videos horizontales, optimizando el contenido para plataformas como TikTok, Instagram Reels y YouTube Shorts mediante el uso de Inteligencia Artificial.
+Este repositorio contiene el **frontend** de Go Vertical, la plataforma para generar automáticamente shorts verticales a partir de videos horizontales.
 
-## 🚀 Tecnologías Utilizadas
-
-El proyecto está desarrollado con un stack moderno enfocado en la velocidad y la experiencia de usuario:
-
-- **Frontend:** [React 19](https://react.dev/) (Vite)
-- **Estilos:** [Bootstrap 5](https://getbootstrap.com/), CSS Personalizado
-- **Iconos:** [Lucide React](https://lucide.dev/)
-- **IA:** [Google Gemini AI](https://ai.google.dev/) (`@google/genai`)
-
-## 🛠️ Instalación y Configuración
-
-Sigue estos pasos para ejecutar el proyecto en tu entorno local:
-
-### Requisitos Previos
-
-- [Node.js](https://nodejs.org/) (Versión 18 o superior recomendada)
-- Una clave de API de **Google Gemini** ([Obtenla aquí](https://aistudio.google.com/app/apikey))
-
-### Pasos para Descargar e Iniciar
-
-1. **Clonar el repositorio:**
-
-   ```bash
-   git clone <url-del-repositorio>
-   cd vertical-ai
-   ```
-
-2. **Instalar dependencias:**
-
-   ```bash
-   npm install
-   ```
-
-3. **Configurar variables de entorno:**
-   Crea un archivo llamado `.env.local` en la raíz del proyecto y añade tu API Key:
-
-   ```env
-   VITE_GEMINI_API_KEY=tu_clave_de_api_aquí
-   ```
-
-4. **Iniciar el servidor de desarrollo:**
-   ```bash
-   npm run dev
-   ```
-
-La aplicación estará disponible en `http://localhost:5173`.
-
-## 📦 Scripts Disponibles
-
-- `npm run dev`: Inicia el servidor de desarrollo.
-- `npm run build`: Crea la versión de producción en la carpeta `dist`.
-- `npm run preview`: Previsualiza la versión de producción localmente.
+Está desarrollado en **React** con Vite, y se conecta con el backend para enviar videos, consultar el estado del procesamiento y recibir los shorts listos para publicar.
 
 ---
 
-Proyecto desarrollado por el **Equipo 35** para la simulación de No Country.
+## ⚙️ Tecnologías Principales
 
-⬅️ [Back](../README.md)
+### 🎨 Frontend
+
+- **React** – Biblioteca principal para construir interfaces.
+- **React Router DOM** – Manejo de rutas y navegación.
+- **React Toastify** – Notificaciones y mensajes al usuario.
+- **Bootstrap 5** – Framework de estilos y componentes.
+- **CSS personalizado** – Ajustes visuales y branding.
+
+---
+
+## ✅ Requisitos Previos
+
+- Node.js **18+**
+- npm o yarn
+- Backend corriendo (ver [Backend README](../Backend/README.md)) o vía Docker (ver README principal)
+
+---
+
+## 🛠️ Instalación y Configuración
+
+1️⃣ **Clonar el repositorio**
+
+```bash
+git clone <url-del-frontend>
+cd Frontend
+```
+
+2️⃣ Instalar dependencias
+
+```bash
+npm install
+```
+
+3️⃣ Configurar variables de entorno (opcional)
+
+Si hay variables necesarias, crear `.env.local` en la raíz del frontend. Por ejemplo:
+
+```env
+VITE_API_URL=http://localhost:8000/api
+```
+
+> Esto apunta al backend local. Cambiar según corresponda.
+
+4️⃣ Iniciar servidor de desarrollo
+
+```bash
+npm run dev
+```
+
+La aplicación estará disponible en http://localhost:3000
+
+## 🎯 Objetivo
+
+El frontend permite a los usuarios:
+
+- Subir videos horizontales
+
+- Consultar el estado de procesamiento en tiempo real
+
+- Descargar o compartir los shorts generados en formato vertical (9:16)
+
+---
+
+---
+
+> _Proyecto desarrollado por el equipo de Go Vertical.
+> Para levantar todo el sistema completo, consultar el [README principal](../README.md)._
+
+---

@@ -1,6 +1,6 @@
 # Backend Setup Guide ⬅️ [Back](../README.md)
 
-Bienvenido a **VerticalAI**. Esta guía te explica cómo levantar el backend en tu máquina para poder conectarlo con el frontend sin perder tiempo.
+Bienvenido a **Go Vertical**. Esta guía te explica cómo levantar el backend en tu máquina para poder conectarlo con el frontend sin perder tiempo.
 
 ### Stack principal
 
@@ -185,36 +185,6 @@ El backend estará disponible en:
 
 ---
 
-## 🐳 Levantar Backend con Docker (la forma simple)
-
-Todo listo con un solo comando. No hace falta instalar nada más que `docker`.
-
-### Desde la raiz del proyecto
-
-1️⃣ Primera vez (construir y levantar)
-
-```bash
-docker compose up --build
-```
-
-2️⃣ Levantar después
-
-```
-docker compose up
-```
-
-3️⃣ Apagar
-
-```
-docker compose down
-```
-
-> 💡 Listo. El backend estará corriendo y listo para usar.
-
----
-
----
-
 ## 📘 Swagger — Probar la API
 
 Entrá en:
@@ -311,6 +281,9 @@ Si todo está corriendo correctamente, el frontend podrá:
 
 ---
 
-Si algo no arranca, avisá al equipo backend 👍
+---
 
-⬅️ [Back](../README.md)
+> _Proyecto desarrollado por el equipo de Go Vertical.
+> Para levantar todo el sistema completo, consultar el [README principal](../README.md)._
+
+---
