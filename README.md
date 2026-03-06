@@ -20,15 +20,15 @@ El sistema:
 
 **Genera shorts listos para publicar en redes sociales**
 
-> De esta manera, se agiliza el proceso de creación de contenido para plataformas como Instagram Reels, TikTok y YouTube Shorts, reduciendo el tiempo de edición y permitiendo al usuario elegir el formato que mejor se adapte a su estrategia de publicación.
+> _De esta manera, se agiliza el proceso de creación de contenido para plataformas como Instagram Reels, TikTok y YouTube Shorts, reduciendo el tiempo de edición y permitiendo al usuario elegir el formato que mejor se adapte a su estrategia de publicación._
 
-Nuestra plataforma permite generar automáticamente shorts verticales a partir de videos horizontales largos.
+## 📸 Demo
 
-## 🚀 Demo
-
-                              📸 Vista previa del funcionamiento:
+                               Vista previa del funcionamiento:
 
 ![Demo Preview](assets/videos/demo.gif)
+
+🎥 **Ver demo completa en YouTube:** [Click aquí](https://youtu.be/5_ujy4bcjOA?si=Qf56FdlObVUoEtYg)
 
 ---
 
@@ -97,17 +97,54 @@ Proyecto desarrollado por:
 
 <br>
 
-| ![Backend Developer](assets/images/max_rodas.jpeg) | ![Backend Developer](assets/images/anthony_erazo.jpeg) | ![Backend Developer](assets/images/anthony.jpg) |
-| :------------------------------------------------: | :----------------------------------------------------: | :---------------------------------------------: |
-|                   **Max Rodas**                    |                   **Anthony Erazo**                    |                **Anthony Bañon**                |
-|                 Backend Developer                  |                   Backend Developer                    |                Backend Developer                |
+| ![Backend Developer](assets/images/max_rodas.jpg) | ![Backend Developer](assets/images/anthony_erazo.jpeg) | ![Backend Developer](assets/images/anthony.jpg) |
+| :-----------------------------------------------: | :----------------------------------------------------: | :---------------------------------------------: |
+|                   **Max Rodas**                   |                   **Anthony Erazo**                    |                **Anthony Bañon**                |
+|                 Backend Developer                 |                   Backend Developer                    |                Backend Developer                |
 
 ## </div>
 
+## 🐳 Levantar la plataforma con Docker
+
+Antes de todo, asegurate de **haber clonado el repositorio** y estar en la raíz del proyecto:
+
+```bash
+git clone <repo-url>
+cd <project-folder>
+```
+
+Todo listo con un solo comando. No hace falta instalar nada más que Docker y Docker Compose.
+
+Desde la raíz del proyecto:
+
+1️⃣ Primera vez (construir y levantar)
+
+```bash
+docker compose up --build
+```
+
+2️⃣ Levantar después
+
+```bash
+docker compose up
+```
+
+3️⃣ Apagar
+
+```bash
+docker compose down
+```
+
+> _Listo. El frontend y backend estarán corriendo y listos para usar._
+
 ## 📦 Documentación Técnica
 
-- 🎨 Frontend → [Frontend README](Frontend/README.md)
-- ⚙️ Backend → [Backend README](Backend/README.md)
+Para desarrolladores que quieran **levantar, probar o contribuir** al proyecto.
+
+- 🎨 **Frontend** → [Frontend README](Frontend/README.md)  
+  _Guía para instalar dependencias, configurar variables y ejecutar el frontend localmente._
+- ⚙️ **Backend** → [Backend README](Backend/README.md)  
+  _Guía para instalar dependencias, configurar variables, ejecutar migraciones y levantar el backend localmente._
 
 ## 📄 Licencia
 
