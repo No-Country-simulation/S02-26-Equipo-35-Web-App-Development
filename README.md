@@ -1,4 +1,4 @@
-# 🎬 Video Shorts Generator
+# 🎬 Go Vertical
 
 ## Problemática
 
